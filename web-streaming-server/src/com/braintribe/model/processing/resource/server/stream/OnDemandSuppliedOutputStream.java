@@ -17,6 +17,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
 
 /**
  * <p>
@@ -31,7 +32,7 @@ import javax.servlet.ServletOutputStream;
 public class OnDemandSuppliedOutputStream extends ServletOutputStream {
 
 	private ServletOutputStream delegate;
-	private Function<Boolean, ServletOutputStream> outputStreamSupplier;
+	private final Function<Boolean, ServletOutputStream> outputStreamSupplier;
 
 	public OnDemandSuppliedOutputStream(Function<Boolean, ServletOutputStream> outputStreamSupplier) {
 		Objects.requireNonNull(outputStreamSupplier, "outputStreamSupplier must not be null");
@@ -202,12 +203,34 @@ public class OnDemandSuppliedOutputStream extends ServletOutputStream {
 		delegate.println(s);
 	}
 
+	@Override
+	public boolean isReady() {
+		if (delegate == null) {
+			delegate = getDelegateUnchecked(true);
+		}
+		return delegate.isReady();
+	}
+
+	@Override
+	public void setWriteListener(WriteListener writeListener) {
+		if (delegate == null) {
+			delegate = getDelegateUnchecked(true);
+		}
+		delegate.setWriteListener(writeListener);
+	}
+
 	private ServletOutputStream getDelegate(boolean forWriting) throws IOException {
 		try {
-			return outputStreamSupplier.apply(forWriting);
+			return getDelegateUnchecked(forWriting);
 		} catch (UncheckedIOException e) {
 			throw e.getCause();
 		}
 	}
 
+	private ServletOutputStream getDelegateUnchecked(boolean forWriting) {
+		return outputStreamSupplier.apply(forWriting);
+	}
+
+	
+	
 }

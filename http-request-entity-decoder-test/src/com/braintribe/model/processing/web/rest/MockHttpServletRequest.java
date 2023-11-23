@@ -36,6 +36,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.Part;
 
 import com.braintribe.common.lcd.NotImplementedException;
@@ -397,6 +398,21 @@ public class MockHttpServletRequest implements HttpServletRequest {
 
 	@Override
 	public Part getPart(String name) throws IOException, ServletException {
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public long getContentLengthLong() {
+		return 0;
+	}
+
+	@Override
+	public String changeSessionId() {
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException {
 		throw new NotImplementedException();
 	}
 
