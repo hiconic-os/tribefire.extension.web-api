@@ -22,7 +22,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
-import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.apache.http.Header;
@@ -129,7 +128,7 @@ public class ApiV1RestServletMultipartTest extends AbstractApiV1RestServletTest 
 			assertEquals(resource.getResourceSource().getGlobalId(), part.getName());
 
 			try (ZipInputStream zipIn = new ZipInputStream(part.openStream())) {
-				ZipEntry entry = zipIn.getNextEntry();
+				zipIn.getNextEntry();
 				String readString = IOTools.slurp(zipIn, "UTF-8");
 				assertEquals(readString, testResContent);
 			}
@@ -305,7 +304,7 @@ public class ApiV1RestServletMultipartTest extends AbstractApiV1RestServletTest 
 		final String testResourceContent = "Resource Content";
 		final int numElementsResourceList = 5;
 
-		Resource requestResource = Resource.createTransient(null);
+		Resource requestResource = createEmptyTransientResource();
 		requestResource.setMimeType("test/test"); // purposefully assign wrong mime type to make sure it is never overridden or corrected
 		String requestResourceHeaderName = request == null ? "resource" : requestResource.getResourceSource().getGlobalId();
 
@@ -428,13 +427,19 @@ public class ApiV1RestServletMultipartTest extends AbstractApiV1RestServletTest 
 		}
 	}
 
+	private Resource createEmptyTransientResource() {
+		return Resource.createTransient(() -> {
+			throw new IllegalStateException("This was not expected to be called!");
+		});
+	}
+
 	@Test
 	public void testDirectResourceDownload() throws Exception {
 		final String testResourceContent = "Resource Content";
 
 		TestServiceRequestWithResources request = TestServiceRequestWithResources.T.create();
 		request.setValue("MyValue");
-		Resource requestResource = Resource.createTransient(null);
+		Resource requestResource = createEmptyTransientResource();
 		request.setResource(requestResource);
 
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -485,8 +490,8 @@ public class ApiV1RestServletMultipartTest extends AbstractApiV1RestServletTest 
 		TestServiceRequestWithResources request = TestServiceRequestWithResources.T.create();
 		TestServiceRequestWithResources embeddedRequest = TestServiceRequestWithResources.T.create();
 		request.setEmbedded(embeddedRequest);
-		Resource requestResource = Resource.createTransient(null);
-		Resource embeddedRequestResource = Resource.createTransient(null);
+		Resource requestResource = createEmptyTransientResource();
+		Resource embeddedRequestResource = createEmptyTransientResource();
 		request.setResource(requestResource);
 		embeddedRequest.setResource(embeddedRequestResource);
 		embeddedRequest.setValue("This will be replaced by part content");
