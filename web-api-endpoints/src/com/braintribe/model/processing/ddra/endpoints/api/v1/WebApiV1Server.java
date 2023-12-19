@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -515,11 +516,11 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 				if (transientSourceWithId != null) {
 					restServletUtils.processResourcePart(streamManagement, part, transientSourceWithId);
 				} else if (resourceLists.containsKey(partName)) {
-					Resource resource = Resource.createTransient(null);
+					Resource resource = createEmptyTransientResource();
 					resourceLists.get(partName).add(resource);
 					restServletUtils.processResourcePart(streamManagement, part, (TransientSource) resource.getResourceSource());
 				} else if (resourceSets.containsKey(partName)) {
-					Resource resource = Resource.createTransient(null);
+					Resource resource = createEmptyTransientResource();
 					resourceSets.get(partName).add(resource);
 					restServletUtils.processResourcePart(streamManagement, part, (TransientSource) resource.getResourceSource());
 				} else if (resources.containsKey(partName)) {
@@ -527,8 +528,7 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 					Resource resource = (Resource) decodingTargetTraversalResult.ensureOwnEntity();
 					ResourceSource resourceSource = resource.getResourceSource();
 					if (resourceSource == null) {
-						resource.assignTransientSource(null);
-						resourceSource = resource.getResourceSource();
+						resourceSource = createEmptyTransientSource(resource);
 					} else if (!(resourceSource instanceof TransientSource)) {
 						throw new IllegalArgumentException("Error while handling part '" + partName
 								+ "'. Can't assign binary data to a resource that has already a non-transient ResourceSource." + resource);
@@ -550,6 +550,20 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 		return service;
 	}
 
+	private Resource createEmptyTransientResource() {
+		Resource resource = Resource.T.create();
+		resource.setResourceSource(createEmptyTransientSource(resource));
+		return resource;
+	}
+
+	private TransientSource createEmptyTransientSource(Resource resource) {
+		TransientSource result = TransientSource.T.create();
+		result.setGlobalId(UUID.randomUUID().toString());
+		result.setOwner(resource);
+		resource.setResourceSource(result);
+		return result;
+	}
+	
 	private void processRequestAndWriteResponse(ApiV1EndpointContext context, ServiceRequest service) throws IOException {
 
 		ApiV1DdraEndpoint endpoint = context.getEndpoint();
@@ -912,8 +926,9 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 		this.streamPipeFactory = streamPipeFactory;
 	}
 
-	@Required
+	/** @deprecated not used */
 	@Configurable
+	@Deprecated
 	public void setSessionIdProvider(Supplier<String> sessionIdProvider) {
 		this.sessionIdProvider = sessionIdProvider;
 	}
