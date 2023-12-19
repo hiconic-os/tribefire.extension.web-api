@@ -63,7 +63,8 @@ public class WebApiClientServiceProcessor implements ServiceProcessor<ServiceReq
 					.ifPresent(a -> a.accept(e.getStatusCode()));
 			return e.getPayload();
 		} finally {
-			logger.debug(() -> "Finished HTTP execution for ServiceRequest: " + request + " after: " + watch.getElapsedTime() + "ms.");
+			logger.debug(() -> "Finished HTTP execution for ServiceRequest: " + (request != null ? request.entityType().getTypeSignature() : "null")
+					+ " after: " + watch.getElapsedTime() + "ms.");
 		}
 	}
 
