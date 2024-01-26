@@ -27,7 +27,6 @@ You should have received a copy of the GNU Lesser General Public License along w
 		<V.com.braintribe.testing>[2.0,2.1)</V.com.braintribe.testing>
 		<V.com.braintribe.servlet>[2.0,2.1)</V.com.braintribe.servlet>
 		<V.com.braintribe.security>[2.0,2.1)</V.com.braintribe.security>
-		<V.com.braintribe.gm.testing>[2.0,2.1)</V.com.braintribe.gm.testing>
 		<V.org.eclipse.jetty.websocket>9.2.13.v20150730</V.org.eclipse.jetty.websocket>
 		<V.org.awaitility>3.0.0</V.org.awaitility>
 		<V.commons-io>2.11.0</V.commons-io>
