@@ -13,6 +13,7 @@ package com.braintribe.ddra.endpoints.api.api.v1;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -41,9 +42,16 @@ public interface StreamHeaderUtils {
 		String disposition = saveLocally ? "attachment" : "inline";
 
 		if (responseFilename != null) {
-			final String normalizedFilename = FileTools.normalizeFilename(responseFilename, '_');
+			String nkfd = Normalizer.normalize(FileTools.normalizeFilename(responseFilename, '_'), Normalizer.Form.NFKD);
+			StringBuilder sb = new StringBuilder(nkfd.length());
+			for (char c : nkfd.toCharArray()) {
+				if (c <= '\u007F')
+					sb.append(c);
+			}
+			final String normalizedFilename = sb.toString();
 
-			// Because the Content-Disposition header is encoded in ISO-8859-1 we need to handle characters outside this encoding specially
+			// Because the Content-Disposition header is encoded in ISO-8859-1 we need to handle characters outside this encoding
+			// specially
 			boolean needsToBeEncoded = !Charset.forName("ISO-8859-1").newEncoder().canEncode(responseFilename);
 
 			// Sometimes the 'filename*' attribute is not supported by a client. That's why we always send a normalized
