@@ -51,9 +51,6 @@ public class HttpClientModuleSpace implements TribefireModuleContract {
 	private HttpClientBindersSpace httpClientBinders;
 
 	@Import
-	private HttpClientBindersContract httpConnectorComponents;
-
-	@Import
 	private HttpSpace http;
 
 	@Import
@@ -80,7 +77,7 @@ public class HttpClientModuleSpace implements TribefireModuleContract {
 		// Note that the basic component binders (for e.g. serviceProcessor or incrementalAccess) can be found via
 		// tfPlatform.deployment().binders().
 
-		bindings.bind(GmHttpClient.T).component(httpConnectorComponents.httpClient()).expertFactory(this::gmHttpClient);
+		bindings.bind(GmHttpClient.T).component(httpClientBinders.httpClient()).expertFactory(this::gmHttpClient);
 	}
 
 	@Managed
