@@ -134,7 +134,7 @@ public abstract class AbstractContextResolver implements HttpContextResolver {
 			contextBuilder.dateFormatting(dateFormatting.getDateFormat(), dateFormatting.getDefaultZone(), dateFormatting.getDefaultLocale());
 		}
 
-		BiFunction<EntityType<?>, Property, GenericModelType> inferer = serviceContext.getAttribute(PropertyTypeInferenceOverride.class);
+		BiFunction<EntityType<?>, Property, GenericModelType> inferer = serviceContext.findOrNull(PropertyTypeInferenceOverride.class);
 
 		contextBuilder.propertyTypeInference((entityType, property) -> {
 			if (inferer != null) {
