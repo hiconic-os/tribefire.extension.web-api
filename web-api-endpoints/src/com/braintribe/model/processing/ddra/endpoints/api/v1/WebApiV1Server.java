@@ -41,9 +41,12 @@ import com.braintribe.cfg.Configurable;
 import com.braintribe.cfg.Required;
 import com.braintribe.codec.marshaller.api.CharacterMarshaller;
 import com.braintribe.codec.marshaller.api.CharsetOption;
+import com.braintribe.codec.marshaller.api.DecodingLenience;
 import com.braintribe.codec.marshaller.api.EntityVisitorOption;
 import com.braintribe.codec.marshaller.api.GmDeserializationOptions;
 import com.braintribe.codec.marshaller.api.Marshaller;
+import com.braintribe.codec.marshaller.api.options.GmDeserializationContextBuilder;
+import com.braintribe.codec.marshaller.api.options.attributes.DecodingLenienceOption;
 import com.braintribe.codec.marshaller.url.UrlEncodingMarshaller;
 import com.braintribe.ddra.endpoints.api.DdraEndpointAspect;
 import com.braintribe.ddra.endpoints.api.DdraEndpointsUtils;
@@ -315,13 +318,20 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 
 		HttpServletRequest request = context.getRequest();
 
-		GmDeserializationOptions options = GmDeserializationOptions.defaultOptions.derive() //
+		GmDeserializationContextBuilder marshallerOptionsBuilder = GmDeserializationOptions.defaultOptions.derive() //
 				.setInferredRootType(serviceRequestType) //
 				.set(EntityVisitorOption.class, streamManagement.getMarshallingVisitor()) //
-				.set(CharsetOption.class, request.getCharacterEncoding()) //
-				.build();
+				.set(CharsetOption.class, request.getCharacterEncoding());
 
 		SingleDdraMapping mapping = context.getMapping();
+		if (mapping != null) {
+			Boolean decodingLenience = mapping.getDefaultDecodingLenience();
+			if (decodingLenience != null) {
+				marshallerOptionsBuilder.set(DecodingLenienceOption.class, new DecodingLenience(decodingLenience));
+			}
+		}
+
+		GmDeserializationOptions options = marshallerOptionsBuilder.build();
 
 		ApiV1DdraEndpoint endpoint = context.getEndpoint();
 
@@ -563,7 +573,7 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 		resource.setResourceSource(result);
 		return result;
 	}
-	
+
 	private void processRequestAndWriteResponse(ApiV1EndpointContext context, ServiceRequest service) throws IOException {
 
 		ApiV1DdraEndpoint endpoint = context.getEndpoint();

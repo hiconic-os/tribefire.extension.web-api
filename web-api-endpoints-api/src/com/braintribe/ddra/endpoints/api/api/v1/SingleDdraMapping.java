@@ -55,6 +55,7 @@ public class SingleDdraMapping {
 	private final String defaultResponseContentType;
 	private final Boolean defaultUseSessionEvaluation;
 	private final Boolean defaultPreserveTransportPayload;
+	private final Boolean defaultDecodingLenience;
 
 	public SingleDdraMapping(String requestTypeSignature, ServiceRequest transformRequest, DdraMapping mapping) {
 		this.requestTypeSignature = requestTypeSignature;
@@ -82,6 +83,7 @@ public class SingleDdraMapping {
 		this.defaultSaveLocally = mapping.getDefaultSaveLocally();
 		this.defaultUseSessionEvaluation = mapping.getDefaultUseSessionEvaluation();
 		this.defaultPreserveTransportPayload = mapping.getPreserveTransportPayload();
+		this.defaultDecodingLenience = mapping.getDecodingLenience();
 	}
 
 	public Boolean getDefaultSaveLocally() {
@@ -190,6 +192,10 @@ public class SingleDdraMapping {
 
 	public Boolean getDefaultPreserveTransportPayload() {
 		return defaultPreserveTransportPayload;
+	}
+
+	public Boolean getDefaultDecodingLenience() {
+		return defaultDecodingLenience;
 	}
 
 	public String getDefaultEndpointParameter(String name) {

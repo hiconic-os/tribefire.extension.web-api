@@ -123,4 +123,7 @@ public interface DdraMapping extends GenericEntity {
 
 	Boolean getPreserveTransportPayload();
 	void setPreserveTransportPayload(Boolean preserveTransportPayload);
+
+	Boolean getDecodingLenience();
+	void setDecodingLenience(Boolean decodingLenience);
 }
