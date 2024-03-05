@@ -16,8 +16,8 @@ You should have received a copy of the GNU Lesser General Public License along w
         <artifactId>parent</artifactId>
         <version>[1.0,1.1)</version>
     </parent>
-    <artifactId>web-streaming-server-test</artifactId>
-    <version>1.0.13</version>
+    <artifactId>web-api-test-tools</artifactId>
+    <version>1.0.1</version>
     <properties>
         <archetype>test</archetype>
     </properties>
@@ -105,10 +105,5 @@ You should have received a copy of the GNU Lesser General Public License along w
             <artifactId>marshaller-commons</artifactId>
             <version>${V.com.braintribe.gm}</version>
         </dependency>
-		<dependency>
-			<groupId>tribefire.extension.web-api</groupId>
-			<artifactId>web-api-test-tools</artifactId>
-			<version>${V.tribefire.extension.web-api}</version>
-		</dependency>
     </dependencies>
 </project>
