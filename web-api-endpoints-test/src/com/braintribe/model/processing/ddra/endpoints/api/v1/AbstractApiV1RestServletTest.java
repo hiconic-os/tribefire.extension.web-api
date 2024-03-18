@@ -73,7 +73,6 @@ public abstract class AbstractApiV1RestServletTest extends AbstractDdraRestServl
 		sessionFactory.addAccess(cortexAccess);
 		servlet.setUsersSessionFactory(sessionFactory);
 		servlet.setSystemSessionFactory(sessionFactory);
-		servlet.setSessionIdProvider(() -> "testsession");
 		servlet.setPollMappings(false);
 		servlet.setStreamPipeFactory(StreamPipes.simpleFactory());
 		servlet.setRestServletUtils(new ApiV1RestServletUtils());

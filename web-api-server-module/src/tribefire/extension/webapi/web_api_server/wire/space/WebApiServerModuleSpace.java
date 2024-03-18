@@ -13,14 +13,8 @@ package tribefire.extension.webapi.web_api_server.wire.space;
 
 import com.braintribe.ddra.endpoints.api.api.v1.DdraMappings;
 import com.braintribe.model.ddra.DdraConfiguration;
-import com.braintribe.model.ddra.DdraMapping;
 import com.braintribe.model.extensiondeployment.HardwiredServicePostProcessor;
 import com.braintribe.model.extensiondeployment.HardwiredServicePreProcessor;
-import com.braintribe.model.extensiondeployment.StateChangeProcessor;
-import com.braintribe.model.extensiondeployment.meta.OnChange;
-import com.braintribe.model.extensiondeployment.meta.OnCreate;
-import com.braintribe.model.extensiondeployment.meta.OnDelete;
-import com.braintribe.model.meta.GmMetaModel;
 import com.braintribe.model.processing.ddra.endpoints.DdraEndpointsExceptionHandler;
 import com.braintribe.model.processing.ddra.endpoints.api.v1.ApiV1RestServletUtils;
 import com.braintribe.model.processing.ddra.endpoints.api.v1.DdraConfigurationStateChangeProcessor;
@@ -29,15 +23,12 @@ import com.braintribe.model.processing.ddra.endpoints.interceptors.HttpStreaming
 import com.braintribe.model.processing.ddra.endpoints.interceptors.HttpStreamingPreProcessor;
 import com.braintribe.model.processing.ddra.endpoints.rest.v2.RestV2Server;
 import com.braintribe.model.processing.deployment.api.binding.DenotationBindingBuilder;
-import com.braintribe.model.processing.meta.editor.ModelMetaDataEditor;
 import com.braintribe.model.processing.session.api.collaboration.PersistenceInitializationContext;
-import com.braintribe.model.processing.session.api.managed.ManagedGmSession;
 import com.braintribe.web.api.registry.FilterConfiguration;
 import com.braintribe.web.api.registry.WebRegistries;
 import com.braintribe.wire.api.annotation.Import;
 import com.braintribe.wire.api.annotation.Managed;
 
-import tribefire.cortex.initializer.support.integrity.wire.contract.CoreInstancesContract;
 import tribefire.module.api.InitializerBindingBuilder;
 import tribefire.module.api.WebRegistryConfiguration;
 import tribefire.module.api.WireContractBindingBuilder;
@@ -62,10 +53,10 @@ public class WebApiServerModuleSpace implements TribefireModuleContract {
 
 	@Import
 	private RestV2HandlerSpace restV2Handler;
-	
+
 	@Import
 	private TcSpace tc;
-	
+
 	//
 	// WireContracts
 	//
@@ -84,52 +75,51 @@ public class WebApiServerModuleSpace implements TribefireModuleContract {
 	public void bindHardwired() {
 		WebPlatformHardwiredDeployablesContract hardwiredDeployables = tfPlatform.hardwiredDeployables();
 		WebRegistryConfiguration webRegistry = hardwiredDeployables.webRegistry();
-		
-		webRegistry.addServlet( //
-				 WebRegistries.servlet() //
-				 .name("web-api-v2-server") //
-				 .instance(apiV2Server()) //
-				 .pattern(WEB_API_V2_SERVLET_PATTERN) //
-		);
-		
-		webRegistry.lenientAuthFilter().addPattern(WEB_API_V2_SERVLET_PATTERN);
-		
+
 		webRegistry.addServlet( //
 				WebRegistries.servlet() //
-				.name("rest-v2-server") //
-				.instance(restV2Server()) //
-				.pattern(REST_V2_SERVLET_PATTERN) //
-				.multipart() //
-				);
-		
+						.name("web-api-v2-server") //
+						.instance(apiV2Server()) //
+						.pattern(WEB_API_V2_SERVLET_PATTERN) //
+		);
+
+		webRegistry.lenientAuthFilter().addPattern(WEB_API_V2_SERVLET_PATTERN);
+
+		webRegistry.addServlet( //
+				WebRegistries.servlet() //
+						.name("rest-v2-server") //
+						.instance(restV2Server()) //
+						.pattern(REST_V2_SERVLET_PATTERN) //
+						.multipart() //
+		);
+
 		webRegistry.strictAuthFilter().addPattern(REST_V2_SERVLET_PATTERN);
 
 		FilterConfiguration compressionFilter = webRegistry.compressionFilter();
 		compressionFilter.addPattern(REST_V2_SERVLET_PATTERN);
 		compressionFilter.addPattern(WEB_API_V2_SERVLET_PATTERN);
-		
+
 		FilterConfiguration threadRenamingFilter = webRegistry.threadRenamingFilter();
 		threadRenamingFilter.addPattern(REST_V2_SERVLET_PATTERN);
 		threadRenamingFilter.addPattern(WEB_API_V2_SERVLET_PATTERN);
-		
+
 		hardwiredDeployables //
-			.bind(httpStreamingPreProcessorDeployable()) //
-			.component(tfPlatform.binders().servicePreProcessor(), this::httpStreamingPreProcessor);
-		
+				.bind(httpStreamingPreProcessorDeployable()) //
+				.component(tfPlatform.binders().servicePreProcessor(), this::httpStreamingPreProcessor);
+
 		hardwiredDeployables //
-			.bind(httpStreamingPostProcessorDeployable()) //
-			.component(tfPlatform.binders().servicePostProcessor(), this::httpStreamingPostProcessor);
-		
+				.bind(httpStreamingPostProcessorDeployable()) //
+				.component(tfPlatform.binders().servicePostProcessor(), this::httpStreamingPostProcessor);
+
 		hardwiredDeployables //
-			.bindStateChangeProcessor("web-api-configuration-monitor", "Web Api Configuration Monitor", this::ddraMappingsScp).getGlobalId();
+				.bindStateChangeProcessor("web-api-configuration-monitor", "Web Api Configuration Monitor", this::ddraMappingsScp).getGlobalId();
 	}
-	
 
 	@Managed
 	private HttpStreamingPreProcessor httpStreamingPreProcessor() {
 		return new HttpStreamingPreProcessor();
 	}
-	
+
 	@Managed
 	private HttpStreamingPostProcessor httpStreamingPostProcessor() {
 		return new HttpStreamingPostProcessor();
@@ -144,7 +134,7 @@ public class WebApiServerModuleSpace implements TribefireModuleContract {
 		bean.setGlobalId("hardwired:preprocessor/http.streaming");
 		return bean;
 	}
-	
+
 	@Managed
 	public HardwiredServicePostProcessor httpStreamingPostProcessorDeployable() {
 		HardwiredServicePostProcessor bean = HardwiredServicePostProcessor.T.create();
@@ -153,7 +143,6 @@ public class WebApiServerModuleSpace implements TribefireModuleContract {
 		bean.setGlobalId("hardwired:postprocessor/http.streaming");
 		return bean;
 	}
-
 
 	@Managed
 	private RestV2Server restV2Server() {
@@ -169,18 +158,18 @@ public class WebApiServerModuleSpace implements TribefireModuleContract {
 		bean.setAccessAvailability(tfPlatform.deployment().deployRegistry()::isDeployed);
 		return bean;
 	}
-	
+
 	@Managed
 	public DdraConfigurationStateChangeProcessor ddraMappingsScp() {
 		DdraConfigurationStateChangeProcessor bean = new DdraConfigurationStateChangeProcessor();
 		bean.setMappings(ddraMappings());
 		return bean;
 	}
-	
+
 	@Managed
 	private WebApiV1Server apiV2Server() {
 		WebApiV1Server bean = new WebApiV1Server();
-		
+
 		bean.setEvaluator(tfPlatform.requestUserRelated().evaluator());
 		bean.setMarshallerRegistry(tfPlatform.marshalling().registry());
 		bean.setExceptionHandler(exceptionHandler());
@@ -188,14 +177,13 @@ public class WebApiServerModuleSpace implements TribefireModuleContract {
 		bean.setTraversingCriteriaMap(tc.criteriaMap());
 		bean.setUsersSessionFactory(tfPlatform.requestUserRelated().sessionFactory());
 		bean.setSystemSessionFactory(tfPlatform.systemUserRelated().sessionFactory());
-		bean.setSessionIdProvider(tfPlatform.requestUserRelated().userSessionIdSupplier());
 		bean.setModelAccessoryFactory(tfPlatform.requestUserRelated().modelAccessoryFactory());
 		bean.setStreamPipeFactory(tfPlatform.resourceProcessing().streamPipeFactory());
 		bean.setRestServletUtils(restServletUtils());
-		
+
 		return bean;
 	}
-	
+
 	@Managed
 	private ApiV1RestServletUtils restServletUtils() {
 		ApiV1RestServletUtils bean = new ApiV1RestServletUtils();
@@ -203,13 +191,11 @@ public class WebApiServerModuleSpace implements TribefireModuleContract {
 		return bean;
 	}
 
-	
 	@Managed
 	private DdraMappings ddraMappings() {
 		return new DdraMappings();
 	}
 
-	
 	@Managed
 	private DdraEndpointsExceptionHandler exceptionHandler() {
 		DdraEndpointsExceptionHandler handler = new DdraEndpointsExceptionHandler();
@@ -219,7 +205,7 @@ public class WebApiServerModuleSpace implements TribefireModuleContract {
 
 		return handler;
 	}
-	
+
 	//
 	// Deployables
 	//
@@ -227,16 +213,16 @@ public class WebApiServerModuleSpace implements TribefireModuleContract {
 	@Override
 	public void bindDeployables(DenotationBindingBuilder bindings) {
 		// Bind deployment experts for deployable denotation types.
-		// Note that the basic component binders (for e.g. serviceProcessor or incrementalAccess) can be found via tfPlatform.deployment().binders(). 
+		// Note that the basic component binders (for e.g. serviceProcessor or incrementalAccess) can be found via tfPlatform.deployment().binders().
 	}
 
 	@Override
 	public void bindInitializers(InitializerBindingBuilder bindings) {
 		bindings.bind(this::initDdraConfiguration);
 	}
-	
+
 	private void initDdraConfiguration(PersistenceInitializationContext context) {
 		context.getSession().create(DdraConfiguration.T, "ddra:config");
 	}
-	
+
 }

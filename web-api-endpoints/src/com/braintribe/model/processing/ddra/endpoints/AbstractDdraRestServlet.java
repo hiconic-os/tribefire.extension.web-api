@@ -22,7 +22,6 @@ import com.braintribe.cfg.Configurable;
 import com.braintribe.cfg.Required;
 import com.braintribe.codec.marshaller.api.Marshaller;
 import com.braintribe.codec.marshaller.api.MarshallerRegistry;
-import com.braintribe.common.lcd.Pair;
 import com.braintribe.ddra.endpoints.api.DdraEndpointContext;
 import com.braintribe.ddra.endpoints.api.DdraEndpointsUtils;
 import com.braintribe.ddra.endpoints.api.DdraTraversingCriteriaMap;
@@ -91,8 +90,8 @@ public abstract class AbstractDdraRestServlet<Context extends DdraEndpointContex
 	@Override
 	protected final void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
-		Pair<String, Boolean> requestLogAndRecurring = logRequest(request);
-		String requestLog = requestLogAndRecurring.first;
+		LogContext requestLogAndRecurring = logRequest(request);
+		String requestLog = requestLogAndRecurring.msg;
 
 		Context context = createContext(request, response);
 
@@ -135,7 +134,7 @@ public abstract class AbstractDdraRestServlet<Context extends DdraEndpointContex
 			}
 
 		} finally {
-			if (requestLogAndRecurring.second) {
+			if (requestLogAndRecurring.recurring) {
 				logger.trace(() -> requestLog + " has been executed: " + stopWatch.toString());
 			} else {
 				logger.debug(() -> requestLog + " has been executed: " + stopWatch.toString());
@@ -146,8 +145,8 @@ public abstract class AbstractDdraRestServlet<Context extends DdraEndpointContex
 	protected abstract Context createContext(HttpServletRequest request, HttpServletResponse response);
 
 	/**
-	 * TODO: This method seems to exist for the sole purpose of being able to stop the time the "filling" needs. See if we
-	 * can solve this another way...
+	 * TODO: This method seems to exist for the sole purpose of being able to stop the time the "filling" needs. See if we can solve this another
+	 * way...
 	 */
 	protected abstract boolean fillContext(Context context);
 
@@ -208,7 +207,10 @@ public abstract class AbstractDdraRestServlet<Context extends DdraEndpointContex
 		HttpExceptions.methodNotAllowed("Unsupported method: \"$s\"", context.getRequest().getMethod());
 	}
 
-	private Pair<String, Boolean> logRequest(HttpServletRequest request) {
+	record LogContext(String msg, boolean recurring) {
+	}
+
+	private LogContext logRequest(HttpServletRequest request) {
 
 		StringBuilder sb = new StringBuilder(ServletTools.stringify(request));
 
@@ -229,7 +231,7 @@ public abstract class AbstractDdraRestServlet<Context extends DdraEndpointContex
 			getLogger().debug(() -> msg);
 		}
 
-		return new Pair<>(msg, isHealthz);
+		return new LogContext(msg, isHealthz);
 	}
 
 	protected boolean accessExists(String acccessId) {

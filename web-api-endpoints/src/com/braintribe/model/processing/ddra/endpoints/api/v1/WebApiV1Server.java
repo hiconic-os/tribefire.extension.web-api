@@ -28,7 +28,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -91,7 +90,7 @@ import com.braintribe.model.processing.ddra.endpoints.interceptors.HttpRequestSu
 import com.braintribe.model.processing.ddra.endpoints.interceptors.HttpResponseConfigurerImpl;
 import com.braintribe.model.processing.meta.cmd.builders.EntityMdResolver;
 import com.braintribe.model.processing.meta.cmd.builders.ModelMdResolver;
-import com.braintribe.model.processing.query.tools.PreparedTcs;
+import com.braintribe.model.processing.query.fluent.SelectQueryBuilder;
 import com.braintribe.model.processing.rpc.commons.api.RpcConstants;
 import com.braintribe.model.processing.rpc.commons.impl.RpcUnmarshallingStreamManagement;
 import com.braintribe.model.processing.service.api.HttpRequestSupplier;
@@ -112,6 +111,7 @@ import com.braintribe.model.processing.web.rest.StandardHeadersMapper;
 import com.braintribe.model.processing.web.rest.UrlPathCodec;
 import com.braintribe.model.processing.web.rest.impl.QueryParamDecoder;
 import com.braintribe.model.prototyping.api.PrototypingRequest;
+import com.braintribe.model.query.SelectQuery;
 import com.braintribe.model.resource.CallStreamCapture;
 import com.braintribe.model.resource.Resource;
 import com.braintribe.model.resource.source.ResourceSource;
@@ -120,9 +120,9 @@ import com.braintribe.model.service.api.ServiceRequest;
 import com.braintribe.model.service.api.result.Unsatisfied;
 import com.braintribe.utils.CollectionTools;
 import com.braintribe.utils.IOTools;
+import com.braintribe.utils.StringTools;
 import com.braintribe.utils.collection.api.ListMap;
 import com.braintribe.utils.collection.impl.HashListMap;
-import com.braintribe.utils.lcd.StringTools;
 import com.braintribe.utils.stream.api.StreamPipe;
 import com.braintribe.utils.stream.api.StreamPipeFactory;
 import com.braintribe.web.multipart.api.FormDataWriter;
@@ -167,11 +167,19 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 
 	private String defaultServiceDomain = "serviceDomain:default";
 	private Predicate<String> accessAvailability = this::serviceDomainExists;
-	private Supplier<String> sessionIdProvider;
 	private ModelAccessoryFactory modelAccessoryFactory;
 	private StreamPipeFactory streamPipeFactory;
 
 	private ApiV1RestServletUtils restServletUtils;
+
+	//@formatter:off
+	private final static SelectQuery checkForDdraConfigUpdateQuery = 		
+		new SelectQueryBuilder().from(DdraConfiguration.T, "d")
+			.where()
+				.property("d", DdraConfiguration.globalId).eq("ddra:config")
+			.select("d", DdraConfiguration.lastChangeTimestamp)
+			.done();
+	//@formatter:on
 
 	@Override
 	protected Logger getLogger() {
@@ -880,17 +888,15 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 
 	public void ensureDdraMappingInitialized() throws StateChangeProcessorException {
 		PersistenceGmSession session = systemSessionFactory.newSession("cortex");
-		DdraConfiguration configuration = session.query().entity(DdraConfiguration.T, "ddra:config").withTraversingCriterion(PreparedTcs.scalarOnlyTc)
-				.refresh();
-
-		String queriedTimestamp = configuration.getLastChangeTimestamp();
+		// Note that this type of query is quicker than searching for the entity directly by the globalId.
+		String queriedTimestamp = session.query().select(checkForDdraConfigUpdateQuery).first();
 
 		if (mappingsAreUpToDate(queriedTimestamp))
 			return;
 
 		synchronized (this) {
 			if (!mappingsAreUpToDate(queriedTimestamp)) {
-				configuration = session.query().entity(DdraConfiguration.T, "ddra:config")
+				DdraConfiguration configuration = session.query().entity(DdraConfiguration.T, "ddra:config")
 						.withTraversingCriterion(TC.create().negation().joker().done()).refresh();
 
 				mappings.setMappings(configuration.getMappings());
@@ -934,13 +940,6 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 	@Configurable
 	public void setStreamPipeFactory(StreamPipeFactory streamPipeFactory) {
 		this.streamPipeFactory = streamPipeFactory;
-	}
-
-	/** @deprecated not used */
-	@Configurable
-	@Deprecated
-	public void setSessionIdProvider(Supplier<String> sessionIdProvider) {
-		this.sessionIdProvider = sessionIdProvider;
 	}
 
 	@Configurable
