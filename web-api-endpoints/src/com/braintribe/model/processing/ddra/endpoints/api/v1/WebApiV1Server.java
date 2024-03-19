@@ -47,6 +47,7 @@ import com.braintribe.codec.marshaller.api.Marshaller;
 import com.braintribe.codec.marshaller.api.options.GmDeserializationContextBuilder;
 import com.braintribe.codec.marshaller.api.options.attributes.DecodingLenienceOption;
 import com.braintribe.codec.marshaller.url.UrlEncodingMarshaller;
+import com.braintribe.common.lcd.Numbers;
 import com.braintribe.ddra.endpoints.api.DdraEndpointAspect;
 import com.braintribe.ddra.endpoints.api.DdraEndpointsUtils;
 import com.braintribe.ddra.endpoints.api.api.v1.ApiV1EndpointContext;
@@ -164,6 +165,8 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 	private String mappingsTimestamp;
 	private DdraMappings mappings;
 	private boolean pollMappings = true;
+	private long nextPoll = -1;
+	private long minPollInterval = Numbers.MILLISECONDS_PER_MINUTE;
 
 	private String defaultServiceDomain = "serviceDomain:default";
 	private Predicate<String> accessAvailability = this::serviceDomainExists;
@@ -886,7 +889,18 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 					"No ServiceDomain or DdraMapping found for name: " + serviceDomain + " and HTTP method: " + context.getRequest().getMethod());
 	}
 
+	// This allows the DdraConfigurationStateChangeProcessor to inform us that the configuration has changed.
+	public void ddraConfgurationChanged() {
+		nextPoll = -1;
+	}
+
 	public void ensureDdraMappingInitialized() throws StateChangeProcessorException {
+		long now = System.currentTimeMillis();
+		if (now < nextPoll) {
+			return;
+		}
+		nextPoll = now + minPollInterval;
+
 		PersistenceGmSession session = systemSessionFactory.newSession("cortex");
 		// Note that this type of query is quicker than searching for the entity directly by the globalId.
 		String queriedTimestamp = session.query().select(checkForDdraConfigUpdateQuery).first();

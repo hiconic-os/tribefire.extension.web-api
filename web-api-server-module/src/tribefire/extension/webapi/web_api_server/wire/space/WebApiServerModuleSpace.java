@@ -163,6 +163,7 @@ public class WebApiServerModuleSpace implements TribefireModuleContract {
 	public DdraConfigurationStateChangeProcessor ddraMappingsScp() {
 		DdraConfigurationStateChangeProcessor bean = new DdraConfigurationStateChangeProcessor();
 		bean.setMappings(ddraMappings());
+		bean.addChangeListener(apiV2Server()::ddraConfgurationChanged);
 		return bean;
 	}
 

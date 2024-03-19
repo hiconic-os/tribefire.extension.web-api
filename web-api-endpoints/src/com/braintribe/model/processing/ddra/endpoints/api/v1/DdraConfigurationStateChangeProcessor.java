@@ -16,6 +16,7 @@ import static java.util.Collections.singletonList;
 
 import java.lang.ref.WeakReference;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.braintribe.cfg.Configurable;
 import com.braintribe.cfg.Required;
@@ -38,14 +39,14 @@ import com.braintribe.model.processing.sp.api.StateChangeProcessorSelectorContex
 import com.braintribe.utils.DateTools;
 
 /**
- * This class listens to changes to the DdraConfiguration singleton as well as its DdraMappings. It does NOT listen to
- * changes to the requestType or transformRequest of the DdraMapping, for simplicity's sake.
+ * This class listens to changes to the DdraConfiguration singleton as well as its DdraMappings. It does NOT listen to changes to the requestType or
+ * transformRequest of the DdraMapping, for simplicity's sake.
  * 
- * As a result, this class produces a DdraMappings instance that is ALMOST thread-safe, making this fully thread safe
- * would involve much more work and very little added benefit.
+ * As a result, this class produces a DdraMappings instance that is ALMOST thread-safe, making this fully thread safe would involve much more work and
+ * very little added benefit.
  * 
- * In addition, in an environment where multiple TF instances are backed by one Cortex access, any change to the
- * mappings would require a restart of all the TFs to take effect.
+ * In addition, in an environment where multiple TF instances are backed by one Cortex access, any change to the mappings would require a restart of
+ * all the TFs to take effect.
  */
 public class DdraConfigurationStateChangeProcessor
 		implements StateChangeProcessorRule, StateChangeProcessor<GenericEntity, GenericEntity>, StateChangeProcessorMatch {
@@ -55,6 +56,8 @@ public class DdraConfigurationStateChangeProcessor
 	private DdraMappings mappings;
 
 	private final ThreadLocal<WeakReference<PersistenceGmSession>> tlLastUsedSession = new ThreadLocal<>();
+
+	private ConcurrentHashMap.KeySetView<Runnable, Boolean> changeListeners = ConcurrentHashMap.newKeySet();
 
 	@Override
 	public void onAfterStateChange(AfterStateChangeContext<GenericEntity> context, GenericEntity customContext) throws StateChangeProcessorException {
@@ -74,8 +77,10 @@ public class DdraConfigurationStateChangeProcessor
 
 		// Avoid updating lastChangeTimestamp multiple times for a single transaction (which can be recognized by using the same
 		// systemSession instance)
-		if (isLastUsedSession(systemSession))
+		if (isLastUsedSession(systemSession)) {
+			changeListeners.forEach(r -> Thread.ofVirtual().start(r));
 			return;
+		}
 
 		setLastUsedSession(systemSession);
 
@@ -86,6 +91,9 @@ public class DdraConfigurationStateChangeProcessor
 
 		// remember which session was used to do the change (in a thread-local) and do not do the change if it's found
 		configuration.setLastChangeTimestamp(DateTools.getCurrentDateString());
+
+		systemSession.commit();
+		changeListeners.forEach(r -> Thread.ofVirtual().start(r));
 	}
 
 	private boolean isLastUsedSession(PersistenceGmSession systemSession) {
@@ -134,5 +142,9 @@ public class DdraConfigurationStateChangeProcessor
 	@Configurable
 	public void setMappings(DdraMappings mappings) {
 		this.mappings = mappings;
+	}
+
+	public void addChangeListener(Runnable runnable) {
+		changeListeners.add(runnable);
 	}
 }
