@@ -185,7 +185,7 @@ public class TestAccessSpace {
 			UseCaseSelector useCaseSelector = session.create(UseCaseSelector.T);
 			useCaseSelector.setUseCase(USECASE_DDRA);
 			
-			BasicModelMetaDataEditor mdEditor = new BasicModelMetaDataEditor(testModel, (e) -> session.create(e));
+			BasicModelMetaDataEditor mdEditor = BasicModelMetaDataEditor.create(testModel).withEntityFactory(session::create).done();
 			mdEditor.onEntityType(TestServiceRequest.T).addPropertyMetaData("mandatoryProperty", session.create(Mandatory.T));
 			mdEditor.onEntityType(TestServiceResponse.T).addPropertyMetaData("intProperty", session.create(Mandatory.T));
 			mdEditor.onEntityType(TestServiceRequestExtended.T).addPropertyMetaData("invisibleProperty", session.create(Hidden.T));
@@ -206,7 +206,7 @@ public class TestAccessSpace {
 			
 			mdEditor.addModelMetaData(description, name);
 
-			mdEditor = new BasicModelMetaDataEditor(testServiceModel, (e) -> session.create(e));
+			mdEditor = BasicModelMetaDataEditor.create(testServiceModel).withEntityFactory(session::create).done();
 			mdEditor.onEntityType(TestServiceRequestWithEntityProperty.T).addPropertyMetaData("zipRequest", session.create(Embedded.T));
 			
 			Embedded embedId = session.create(Embedded.T);
@@ -214,7 +214,7 @@ public class TestAccessSpace {
 			
 			mdEditor.onEntityType(TestAccessRequest.T).addPropertyMetaData("thing", embedId);
 			
-			mdEditor = new BasicModelMetaDataEditor(ddraEndpointsModel, (e) -> session.create(e));
+			mdEditor = BasicModelMetaDataEditor.create(ddraEndpointsModel).withEntityFactory(session::create).done();
 			mdEditor.onEntityType(ApiV1DdraEndpoint.T)
 				.addPropertyMetaData("projection", hiddenDddraMapping)
 				.addPropertyMetaData("depth", hiddenDddraMappingPath);
@@ -248,12 +248,11 @@ public class TestAccessSpace {
 	private static <T extends GenericEntity> T cloneToSession(T toBeCloned, PersistenceGmSession session) {
 		T clone = toBeCloned.clone(new StandardCloningContext() {
 			
-			
 			@Override
-			public <T> T getAssociated(GenericEntity entity) {
+			public <E> E getAssociated(GenericEntity entity) {
 				String globalId = entity.getGlobalId();
 				if (globalId != null) {
-					T existing = session.findEntityByGlobalId(globalId);
+					E existing = session.findEntityByGlobalId(globalId);
 					if (existing != null) {
 						return existing;
 					}
