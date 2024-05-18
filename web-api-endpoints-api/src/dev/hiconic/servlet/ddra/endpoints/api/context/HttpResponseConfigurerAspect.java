@@ -9,12 +9,10 @@
 // 
 // You should have received a copy of the GNU Lesser General Public License along with this library; See http://www.gnu.org/licenses/.
 // ============================================================================
-package com.braintribe.ddra.endpoints.api;
+package dev.hiconic.servlet.ddra.endpoints.api.context;
 
-/**
- * @deprecated Use the copy: {@link dev.hiconic.servlet.ddra.endpoints.api.DdraTraversingCriteriaMap}
- */
-@Deprecated
-public class DdraTraversingCriteriaMap extends dev.hiconic.servlet.ddra.endpoints.api.DdraTraversingCriteriaMap {
-	// nothing to add
+import com.braintribe.model.generic.eval.EvalContextAspect;
+
+public interface HttpResponseConfigurerAspect extends EvalContextAspect<HttpResponseConfigurer> {
+	// Intentionally left blank
 }

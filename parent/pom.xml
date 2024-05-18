@@ -22,6 +22,7 @@ You should have received a copy of the GNU Lesser General Public License along w
 		<V.tribefire.cortex>[3.0,3.1)</V.tribefire.cortex>
 		<V.com.braintribe.wire>[2.0,2.1)</V.com.braintribe.wire>
 		<V.javax.servlet>3.1.0</V.javax.servlet>
+		<V.jakarta.servlet>6.0.0</V.jakarta.servlet>
 		<V.javax.websocket>1.1</V.javax.websocket>
 		<V.com.braintribe.web.multipart>[2.0,2.1)</V.com.braintribe.web.multipart>
 		<V.com.braintribe.testing>[2.0,2.1)</V.com.braintribe.testing>

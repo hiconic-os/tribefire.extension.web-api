@@ -9,12 +9,12 @@
 // 
 // You should have received a copy of the GNU Lesser General Public License along with this library; See http://www.gnu.org/licenses/.
 // ============================================================================
-package com.braintribe.ddra.endpoints.api;
+package dev.hiconic.servlet.decoder.impl.header;
 
-/**
- * @deprecated Use the copy: {@link dev.hiconic.servlet.ddra.endpoints.api.DdraTraversingCriteriaMap}
- */
-@Deprecated
-public class DdraTraversingCriteriaMap extends dev.hiconic.servlet.ddra.endpoints.api.DdraTraversingCriteriaMap {
-	// nothing to add
+public enum HeaderValueType {
+	STRING_LIST,
+	DATE,
+	STRING,
+	INT,
+	UNKOWN // map.getOrDefault(, UNKNOWN)
 }

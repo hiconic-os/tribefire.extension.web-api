@@ -1,0 +1,3 @@
+Only the api.v1 part was migrated, and only in this artifact.
+
+tests or web-api-endpoints were not touched.

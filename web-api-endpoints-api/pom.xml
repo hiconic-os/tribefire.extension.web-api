@@ -30,6 +30,21 @@ You should have received a copy of the GNU Lesser General Public License along w
     </licenses>
     <dependencies>
         <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>${V.jakarta.servlet}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!--Deprecated-->
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>${V.javax.servlet}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
             <groupId>tribefire.extension.web-api</groupId>
             <artifactId>http-request-entity-decoder</artifactId>
             <version>${V.tribefire.extension.web-api}</version>
@@ -43,12 +58,6 @@ You should have received a copy of the GNU Lesser General Public License along w
             <groupId>tribefire.extension.web-api</groupId>
             <artifactId>web-api-endpoints-model</artifactId>
             <version>${V.tribefire.extension.web-api}</version>
-        </dependency>
-        <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <scope>provided</scope>
-            <version>${V.javax.servlet}</version>
         </dependency>
         <dependency>
             <groupId>com.braintribe.gm</groupId>

@@ -9,12 +9,14 @@
 // 
 // You should have received a copy of the GNU Lesser General Public License along with this library; See http://www.gnu.org/licenses/.
 // ============================================================================
-package com.braintribe.ddra.endpoints.api;
+package dev.hiconic.servlet.ddra.endpoints.api.context;
 
-/**
- * @deprecated Use the copy: {@link dev.hiconic.servlet.ddra.endpoints.api.DdraTraversingCriteriaMap}
- */
-@Deprecated
-public class DdraTraversingCriteriaMap extends dev.hiconic.servlet.ddra.endpoints.api.DdraTraversingCriteriaMap {
-	// nothing to add
+import java.util.function.Consumer;
+
+import jakarta.servlet.http.HttpServletResponse;
+
+public interface HttpResponseConfigurer {
+	
+	void applyFor(Object response, Consumer<HttpServletResponse> consumer);
+	
 }
