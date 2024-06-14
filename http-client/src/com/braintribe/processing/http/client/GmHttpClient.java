@@ -373,7 +373,7 @@ public class GmHttpClient implements HttpClient {
 			} else {
 
 				ByteArrayOutputStream os = new ByteArrayOutputStream();
-				Marshaller bodyMarshaller = getMarshaller(context.produces());
+				Marshaller bodyMarshaller = getMarshaller(context.consumes());
 				GmSerializationOptions options = getMarshallingOptions(context, payload);
 				bodyMarshaller.marshall(os, payload, options);
 				byte[] byteArray = os.toByteArray();
