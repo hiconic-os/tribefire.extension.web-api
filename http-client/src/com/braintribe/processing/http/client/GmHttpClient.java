@@ -342,12 +342,17 @@ public class GmHttpClient implements HttpClient {
 				RequestBuilder
 				.create(context.requestMethod())
 				.setConfig(this.httpRequestConfig)
-				.setUri(buildUri(context))
-				.addHeader(HttpConstants.HTTP_HEADER_CONTENTTYPE, context.consumes())
-				.addHeader(HttpConstants.HTTP_HEADER_ACCEPT, context.produces());
+				.setUri(buildUri(context));
 		//@formatter:on
 
 		context.headerParameters().forEach(p -> requestBuilder.addHeader(p.getName(), p.getValue()));
+
+		if (requestBuilder.getFirstHeader(HttpConstants.HTTP_HEADER_ACCEPT) == null) {
+			requestBuilder.addHeader(HttpConstants.HTTP_HEADER_ACCEPT, context.produces());
+		}
+		if (requestBuilder.getFirstHeader(HttpConstants.HTTP_HEADER_CONTENTTYPE) == null) {
+			requestBuilder.addHeader(HttpConstants.HTTP_HEADER_CONTENTTYPE, context.consumes());
+		}
 
 		Object payload = context.payload();
 		if (payload != null) {
@@ -368,7 +373,7 @@ public class GmHttpClient implements HttpClient {
 			} else {
 
 				ByteArrayOutputStream os = new ByteArrayOutputStream();
-				Marshaller bodyMarshaller = getMarshaller(context.consumes());
+				Marshaller bodyMarshaller = getMarshaller(context.produces());
 				GmSerializationOptions options = getMarshallingOptions(context, payload);
 				bodyMarshaller.marshall(os, payload, options);
 				byte[] byteArray = os.toByteArray();
