@@ -57,6 +57,7 @@ import com.braintribe.model.processing.meta.cmd.builders.EntityMdResolver;
 import com.braintribe.model.processing.meta.cmd.builders.ModelMdResolver;
 import com.braintribe.model.processing.meta.cmd.builders.PropertyMdResolver;
 import com.braintribe.model.processing.service.api.ServiceRequestContext;
+import com.braintribe.model.resource.Resource;
 import com.braintribe.model.service.api.ServiceRequest;
 import com.braintribe.processing.http.client.HttpClient;
 import com.braintribe.processing.http.client.HttpConstants;
@@ -153,6 +154,23 @@ public abstract class AbstractContextResolver implements HttpContextResolver {
 			//@formatter:off
 			return (inferredType != null) ? typeReflection.getType(inferredType.getType().getTypeSignature()) : property.getType();
 		});
+		
+		// Compute
+		GenericModelType evaluatesTo = resolver.requestType.getEffectiveEvaluatesTo();
+		if (evaluatesTo != null) {
+			if (evaluatesTo.isEntity()) {
+				EntityType<?> responseEntityType = (EntityType<?>) evaluatesTo;
+				EntityMdResolver mdResolver = modelResolver.entityType(responseEntityType);
+				Property bodyStreamingProperty = responseEntityType.getProperties().stream().filter(p -> Resource.T.isAssignableFrom(p.getType()))
+				.filter(rp -> {
+					HttpResourceStreamBodyParam md = mdResolver.property(rp).meta(HttpResourceStreamBodyParam.T).exclusive();
+					return md != null;
+				}).findFirst().orElse(null);
+				if (bodyStreamingProperty != null) {
+					contextBuilder.streamContentResponseResourceProperty(bodyStreamingProperty.getName());
+				}
+			}
+		}
 		
 		contextBuilder.responseBodyParameterTranslation((entityType, parameterName) -> {
 			PropertyTranslation propertyTranslation = resolver.responsePropertyTranslations.get(entityType);
@@ -446,7 +464,9 @@ public abstract class AbstractContextResolver implements HttpContextResolver {
 						//@formatter:off
 						String paramName = resolveParameterName(p, md);
 						
-						if (md == null || md.paramType() == HttpParamType.BODY) {
+						if (md instanceof HttpResourceStreamBodyParam) {
+							propertyTranslation.streamContentResponseResourceProperty = p.getName();
+						} else if (md == null || md.paramType() == HttpParamType.BODY) {
 							propertyTranslation.bodyParameters.put(paramName, p);
 						} else if (md.paramType() == HttpParamType.HEADER) {
 							propertyTranslation.headerParameters.put(paramName, p);
@@ -503,7 +523,7 @@ public abstract class AbstractContextResolver implements HttpContextResolver {
 	protected class PropertyTranslation {
 		Map<String, Property> bodyParameters = new HashMap<>();
 		Map<String, Property> headerParameters = new HashMap<>();
-
+		String streamContentResponseResourceProperty;
 	}
 	
 	

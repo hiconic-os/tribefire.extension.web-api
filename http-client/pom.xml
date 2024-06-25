@@ -99,5 +99,10 @@ You should have received a copy of the GNU Lesser General Public License along w
 			<artifactId>commons-io</artifactId>
 			<version>${V.commons-io}</version>
 		</dependency>		 
+		<dependency>
+			<groupId>com.braintribe.gm</groupId>
+			<artifactId>gm-common-api</artifactId>
+			<version>${V.com.braintribe.gm}</version>
+		</dependency>
     </dependencies>
 </project>

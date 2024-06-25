@@ -91,4 +91,6 @@ public interface HttpRequestContextBuilder extends HttpConstants {
 
 	HttpRequestContext build();
 
+	HttpRequestContextBuilder streamContentResponseResourceProperty(String streamContentResponseResourceProperty);
+
 }

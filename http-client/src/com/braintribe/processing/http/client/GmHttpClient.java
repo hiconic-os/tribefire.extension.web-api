@@ -21,6 +21,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.input.TeeInputStream;
@@ -72,7 +73,9 @@ import com.braintribe.model.generic.eval.Evaluator;
 import com.braintribe.model.generic.reflection.BaseType;
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.GenericModelType;
+import com.braintribe.model.generic.reflection.Property;
 import com.braintribe.model.resource.Resource;
+import com.braintribe.model.resource.api.MimeTypeRegistry;
 import com.braintribe.model.service.api.ServiceRequest;
 import com.braintribe.model.service.api.result.Neutral;
 import com.braintribe.transport.http.DefaultHttpClientProvider;
@@ -100,6 +103,7 @@ public class GmHttpClient implements HttpClient {
 	private LogLevel responseLogging;
 	private Evaluator<ServiceRequest> evaluator;
 	private StreamPipeFactory streamPipeFactory;
+	private MimeTypeRegistry mimeTypeRegistry;
 
 	// ***************************************************************************************************
 	// Setter
@@ -121,6 +125,11 @@ public class GmHttpClient implements HttpClient {
 	// ***************************************************************************************************
 	// Setter
 	// ***************************************************************************************************
+
+	@Configurable
+	public void setMimeTypeRegistry(MimeTypeRegistry mimeTypeRegistry) {
+		this.mimeTypeRegistry = mimeTypeRegistry;
+	}
 
 	@Configurable
 	public void setBaseUrl(String baseUrl) {
@@ -207,6 +216,7 @@ public class GmHttpClient implements HttpClient {
 			if (code == HttpURLConnection.HTTP_NO_CONTENT) {
 				responseBuilder.payload(Neutral.NEUTRAL);
 			} else {
+
 				StreamPipe pipe = streamPipeFactory.newPipe(requestUri.toString());
 				Marshaller responseMarshaller = null;
 
@@ -218,26 +228,73 @@ public class GmHttpClient implements HttpClient {
 
 					if (responseType != null && responseMarshaller != null) {
 
-						HttpDateFormatting dateFormatting = context.dateFormatting();
+						String streamContentResponseResourceProperty = context.streamContentResponseResourceProperty();
 
-						GmDeserializationOptions options = //
-								GmDeserializationOptions //
-										.deriveDefaults() //
-										.setInferredRootType(responseType) //
-										.setDecodingLenience(new DecodingLenience(true)) //
-										.set(PropertyTypeInferenceOverride.class, context::propertyTypeInference) //
-										.set(PropertyDeserializationTranslation.class, context::responseBodyParameterTranslation) //
-										.set(DateFormatOption.class, dateFormatting != null ? dateFormatting.getDateFormat() : null) //
-										.set(DateDefaultZoneOption.class, dateFormatting != null ? dateFormatting.getDefaultZone() : null) //
-										.set(DateLocaleOption.class, dateFormatting != null ? dateFormatting.getDefaultLocale() : null) //
-										.build();
-
-						responsePayload = responseMarshaller.unmarshall(in, options);
-						if (responsePayload == null && responseType.isEntity()) {
-							logger.debug("Got not payload from the client. Creating an empty " + responseType);
-							responsePayload = ((EntityType<?>) responseType).create();
+						if (streamContentResponseResourceProperty != null) {
+							EntityType<?> responseEntityType = (EntityType<?>) responseType;
+							Property property = responseEntityType.findProperty(streamContentResponseResourceProperty);
+							if (property == null || !Resource.T.isAssignableFrom(property.getType())) {
+								streamContentResponseResourceProperty = null;
+							}
 						}
 
+						if (streamContentResponseResourceProperty != null) {
+
+							responseMarshaller = null;
+
+							StreamPipe responsePipe = streamPipeFactory.newPipe("download-" + requestUri.toString());
+							try (OutputStream responseBodyPipeOutputStream = responsePipe.acquireOutputStream()) {
+								IOTools.transferBytes(in, responseBodyPipeOutputStream);
+							}
+
+							Resource resource = Resource.createTransient(responsePipe::openInputStream);
+							Optional.ofNullable(httpResponse.getFirstHeader("Content-Type")).ifPresent(h -> resource.setMimeType(h.getValue()));
+							Optional.ofNullable(httpResponse.getFirstHeader("Content-Length"))
+									.ifPresent(h -> resource.setFileSize(Long.parseLong(h.getValue())));
+							Optional.ofNullable(httpResponse.getFirstHeader("Content-Disposition")).ifPresent(h -> {
+								String disposition = h.getValue();
+								String filename = disposition.replaceFirst("(?i)^.*filename=\"?([^\"]+)\"?.*$", "$1");
+								resource.setName(filename);
+							});
+							if (resource.getName() == null && resource.getMimeType() != null) {
+								String ext = "bin";
+								if (mimeTypeRegistry != null) {
+									ext = mimeTypeRegistry.getExtension(resource.getMimeType()).orElse(null);
+									if (ext == null) {
+										ext = "bin";
+									}
+								}
+								resource.setName("content." + ext);
+							}
+							logger.debug(() -> "Created transient resource " + resource + " from response body.");
+
+							EntityType<?> responseEntityType = (EntityType<?>) responseType;
+							responsePayload = responseEntityType.create();
+							responseEntityType.getProperty(streamContentResponseResourceProperty).set((GenericEntity) responsePayload, resource);
+
+						} else {
+
+							HttpDateFormatting dateFormatting = context.dateFormatting();
+
+							GmDeserializationOptions options = //
+									GmDeserializationOptions //
+											.deriveDefaults() //
+											.setInferredRootType(responseType) //
+											.setDecodingLenience(new DecodingLenience(true)) //
+											.set(PropertyTypeInferenceOverride.class, context::propertyTypeInference) //
+											.set(PropertyDeserializationTranslation.class, context::responseBodyParameterTranslation) //
+											.set(DateFormatOption.class, dateFormatting != null ? dateFormatting.getDateFormat() : null) //
+											.set(DateDefaultZoneOption.class, dateFormatting != null ? dateFormatting.getDefaultZone() : null) //
+											.set(DateLocaleOption.class, dateFormatting != null ? dateFormatting.getDefaultLocale() : null) //
+											.build();
+
+							responsePayload = responseMarshaller.unmarshall(in, options);
+							if (responsePayload == null && responseType.isEntity()) {
+								logger.debug("Got not payload from the client. Creating an empty " + responseType);
+								responsePayload = ((EntityType<?>) responseType).create();
+							}
+
+						}
 					} else {
 						responsePayload = getResponseAsString(in);
 						responseBuilder.isGeneric();
@@ -432,7 +489,6 @@ public class GmHttpClient implements HttpClient {
 		String baseUri = this.baseUrl;
 		String requestPath = restContext.requestPath();
 		if (!StringTools.isBlank(requestPath)) {
-			baseUri = ensureTrailingSlash(this.baseUrl) + removeStartingSlash(restContext.requestPath());
 			if (StringTools.isBlank(this.baseUrl)) {
 				baseUri = requestPath;
 			} else {

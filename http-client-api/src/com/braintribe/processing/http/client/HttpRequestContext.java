@@ -31,6 +31,8 @@ public interface HttpRequestContext {
 	GmSerializationOptions payloadMarshallingOptions();
 	boolean streamResourceContent();
 
+	String streamContentResponseResourceProperty();
+
 	Stream<HttpParameter> headerParameters();
 	Stream<HttpParameter> queryParameters();
 
@@ -49,11 +51,11 @@ public interface HttpRequestContext {
 		return property.getType();
 	}
 
-	default Property responseBodyParameterTranslation (EntityType<?> entityType, String parameter) {
+	default Property responseBodyParameterTranslation(EntityType<?> entityType, String parameter) {
 		return entityType.findProperty(parameter);
 	}
 
-	default Property responseHeaderParameterTranslation (EntityType<?> entityType, String parameter) {
+	default Property responseHeaderParameterTranslation(EntityType<?> entityType, String parameter) {
 		return entityType.findProperty(parameter);
 	}
 

@@ -63,6 +63,7 @@ public class BasicRequestContextBuilder implements HttpRequestContextBuilder {
 	private String dateDefaultZone = null;
 	private String dateDefaultLocale = null;
 	private boolean streamResourceContent = false;
+	private String streamContentResponseResourceProperty;
 
 	// ***************************************************************************************************
 	// Instantiation
@@ -252,6 +253,12 @@ public class BasicRequestContextBuilder implements HttpRequestContextBuilder {
 	}
 
 	@Override
+	public HttpRequestContextBuilder streamContentResponseResourceProperty(String streamContentResponseResourceProperty) {
+		this.streamContentResponseResourceProperty = streamContentResponseResourceProperty;
+		return this;
+	}
+
+	@Override
 	public HttpRequestContextBuilder responseBodyParameterTranslation(BiFunction<EntityType<?>, String, Property> responseBodyParameterTranslation) {
 		this.responseBodyParameterTranslation = responseBodyParameterTranslation;
 		return this;
@@ -359,6 +366,11 @@ public class BasicRequestContextBuilder implements HttpRequestContextBuilder {
 			@Override
 			public boolean streamResourceContent() {
 				return streamResourceContent;
+			}
+
+			@Override
+			public String streamContentResponseResourceProperty() {
+				return streamContentResponseResourceProperty;
 			}
 
 			@Override

@@ -85,6 +85,7 @@ public class HttpClientModuleSpace implements TribefireModuleContract {
 		GmHttpClient deployable = context.getDeployable();
 		com.braintribe.processing.http.client.GmHttpClient bean = new com.braintribe.processing.http.client.GmHttpClient();
 		bean.setBaseUrl(deployable.getBaseUrl());
+		bean.setMimeTypeRegistry(resourceProcessing.mimeTypeRegistry());
 		bean.setMarshallerRegistry(tfPlatform.marshalling().registry());
 		bean.setHttpClientProvider(http.clientProvider());
 		bean.setHttpRequestConfig(buildRequestConfig(deployable));
