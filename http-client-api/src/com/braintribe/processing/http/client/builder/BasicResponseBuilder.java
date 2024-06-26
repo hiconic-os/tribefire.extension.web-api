@@ -19,7 +19,7 @@ import com.braintribe.model.generic.GenericEntity;
 import com.braintribe.model.generic.reflection.BaseType;
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.Property;
-import com.braintribe.model.generic.reflection.SimpleType;
+import com.braintribe.model.generic.reflection.SimpleTypes;
 import com.braintribe.processing.http.client.HttpParameter;
 import com.braintribe.processing.http.client.HttpRequestContext;
 import com.braintribe.processing.http.client.HttpResponse;
@@ -90,7 +90,7 @@ public class BasicResponseBuilder implements HttpResponseBuilder {
 					EntityType<GenericEntity> entityType = entityPayload.entityType();
 					headerParameters().forEach(hp -> {
 						Property responseProperty = context.responseHeaderParameterTranslation(entityType, hp.getName());
-						if (responseProperty != null && responseProperty.getType() == SimpleType.TYPE_STRING) {
+						if (responseProperty != null && responseProperty.getType() == SimpleTypes.TYPE_STRING) {
 							responseProperty.set(entityPayload, hp.getValue());
 						}
 					});
