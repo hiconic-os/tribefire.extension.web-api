@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // ============================================================================
-// ============================================================================
 package dev.hiconic.servlet.decoder.impl.header;
 
 import static dev.hiconic.servlet.decoder.api.HttpExceptions.badRequest;

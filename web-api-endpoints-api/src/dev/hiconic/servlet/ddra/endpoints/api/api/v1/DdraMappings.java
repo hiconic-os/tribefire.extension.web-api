@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // ============================================================================
-// ============================================================================
 package dev.hiconic.servlet.ddra.endpoints.api.api.v1;
 
 import java.util.Arrays;
