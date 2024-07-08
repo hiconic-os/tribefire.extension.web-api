@@ -48,6 +48,7 @@ import org.apache.http.util.EntityUtils;
 
 import com.braintribe.cfg.Configurable;
 import com.braintribe.codec.marshaller.api.CharacterMarshaller;
+import com.braintribe.codec.marshaller.api.CmdResolverOption;
 import com.braintribe.codec.marshaller.api.DateDefaultZoneOption;
 import com.braintribe.codec.marshaller.api.DateFormatOption;
 import com.braintribe.codec.marshaller.api.DateLocaleOption;
@@ -78,6 +79,9 @@ import com.braintribe.model.generic.reflection.BaseType;
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.GenericModelType;
 import com.braintribe.model.generic.reflection.Property;
+import com.braintribe.model.processing.meta.cmd.CmdResolver;
+import com.braintribe.model.processing.service.api.aspect.DomainIdAspect;
+import com.braintribe.model.processing.session.api.managed.ModelAccessoryFactory;
 import com.braintribe.model.resource.Resource;
 import com.braintribe.model.resource.api.MimeTypeRegistry;
 import com.braintribe.model.service.api.ServiceRequest;
@@ -88,6 +92,7 @@ import com.braintribe.transport.http.ResponseEntityInputStream;
 import com.braintribe.transport.http.util.HttpTools;
 import com.braintribe.utils.IOTools;
 import com.braintribe.utils.StringTools;
+import com.braintribe.utils.collection.impl.AttributeContexts;
 import com.braintribe.utils.lcd.StopWatch;
 import com.braintribe.utils.stream.api.StreamPipe;
 import com.braintribe.utils.stream.api.StreamPipeFactory;
@@ -108,6 +113,7 @@ public class GmHttpClient implements HttpClient {
 	private Evaluator<ServiceRequest> evaluator;
 	private StreamPipeFactory streamPipeFactory;
 	private MimeTypeRegistry mimeTypeRegistry;
+	private ModelAccessoryFactory modelAccessoryFactory;
 
 	// ***************************************************************************************************
 	// Setter
@@ -133,6 +139,11 @@ public class GmHttpClient implements HttpClient {
 	@Configurable
 	public void setMimeTypeRegistry(MimeTypeRegistry mimeTypeRegistry) {
 		this.mimeTypeRegistry = mimeTypeRegistry;
+	}
+	
+	@Configurable
+	public void setModelAccessoryFactory(ModelAccessoryFactory modelAccessoryFactory) {
+		this.modelAccessoryFactory = modelAccessoryFactory;
 	}
 
 	@Configurable
@@ -229,7 +240,7 @@ public class GmHttpClient implements HttpClient {
 
 					responseType = context.responseTypeForCode(code);
 					responseMarshaller = getMarshaller(context.produces());
-
+					
 					if (responseType != null && responseMarshaller != null) {
 
 						String streamContentResponseResourceProperty = context.streamContentResponseResourceProperty();
@@ -279,7 +290,7 @@ public class GmHttpClient implements HttpClient {
 						} else {
 
 							HttpDateFormatting dateFormatting = context.dateFormatting();
-
+							
 							GmDeserializationOptions options = //
 									GmDeserializationOptions //
 											.deriveDefaults() //
@@ -290,6 +301,7 @@ public class GmHttpClient implements HttpClient {
 											.set(DateFormatOption.class, dateFormatting != null ? dateFormatting.getDateFormat() : null) //
 											.set(DateDefaultZoneOption.class, dateFormatting != null ? dateFormatting.getDefaultZone() : null) //
 											.set(DateLocaleOption.class, dateFormatting != null ? dateFormatting.getDefaultLocale() : null) //
+											.set(CmdResolverOption.class, findCmdResolver())
 											.build();
 
 							responsePayload = responseMarshaller.unmarshall(in, options);
@@ -320,15 +332,15 @@ public class GmHttpClient implements HttpClient {
 					}
 
 				} finally {
-					final String content;
-					if (responseMarshaller instanceof CharacterMarshaller) {
-						try (InputStream pipeIn = pipe.openInputStream()) {
-							content = com.braintribe.utils.IOTools.slurp(pipeIn, "UTF-8");
-						}
-					} else {
-						content = "<binary>";
-					}
 					if (responseLogging != null) {
+						final String content;
+						if (responseMarshaller instanceof CharacterMarshaller) {
+							try (InputStream pipeIn = pipe.openInputStream()) {
+								content = com.braintribe.utils.IOTools.slurp(pipeIn, "UTF-8");
+							}
+						} else {
+							content = "<binary>";
+						}
 						logger.log(responseLogging, () -> "Received body from " + requestUri + ": " + content);
 					}
 				}
@@ -349,6 +361,18 @@ public class GmHttpClient implements HttpClient {
 			HttpTools.closeResponseQuietly(requestUri.toString(), httpResponse);
 			logger.trace(() -> "Finished rest request execution to: " + requestUri.toString());
 		}
+	}
+
+	private CmdResolver findCmdResolver() {
+		if (modelAccessoryFactory == null)
+			return null;
+		
+		String domainId = AttributeContexts.peek().findOrNull(DomainIdAspect.class);
+		
+		if (domainId == null)
+			return null;
+		
+		return modelAccessoryFactory.getForServiceDomain(domainId).getCmdResolver();
 	}
 
 	// ***************************************************************************************************

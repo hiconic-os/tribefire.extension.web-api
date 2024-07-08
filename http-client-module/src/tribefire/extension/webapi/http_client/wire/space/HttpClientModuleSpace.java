@@ -98,7 +98,7 @@ public class HttpClientModuleSpace implements TribefireModuleContract {
 		bean.setResponseLogging(LogLevels.convert(deployable.getResponseLogging()));
 		bean.setEvaluator(tfPlatform.systemUserRelated().evaluator());
 		bean.setStreamPipeFactory(resourceProcessing.streamPipeFactory());
-
+		bean.setModelAccessoryFactory(tfPlatform.requestUserRelated().modelAccessoryFactory());
 		return bean;
 	}
 
