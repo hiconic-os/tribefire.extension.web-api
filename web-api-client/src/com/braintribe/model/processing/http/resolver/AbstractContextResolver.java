@@ -15,9 +15,11 @@
 // ============================================================================
 package com.braintribe.model.processing.http.resolver;
 
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -68,6 +70,7 @@ import com.braintribe.processing.http.client.HttpConstants;
 import com.braintribe.processing.http.client.HttpParameter;
 import com.braintribe.processing.http.client.HttpRequestContext;
 import com.braintribe.processing.http.client.HttpRequestContextBuilder;
+import com.braintribe.utils.DateTools;
 import com.braintribe.utils.StringTools;
 
 public abstract class AbstractContextResolver implements HttpContextResolver {
@@ -356,19 +359,31 @@ public abstract class AbstractContextResolver implements HttpContextResolver {
 			GenericModelType type = typeReflection.getType(value);
 			switch (type.getTypeCode()) {
 			case booleanType:
-			case dateType:
 			case decimalType:
 			case doubleType:
 			case stringType:
 			case floatType:
 			case integerType:
 			case longType:
-			case enumType:
+			case enumType: {
 				ScalarType scalarType = (ScalarType) type;
 				String encodedValue = scalarType.instanceToString(value);
 				encodedValues.add(encodedValue);
 				break;
-			case setType:
+			}
+			case dateType: {
+				HttpDateFormatting dateFormatting = resolveDateFormatting();
+				if (dateFormatting != null) {
+					DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateFormatting.getDateFormat());
+					String encodedValue = DateTools.encode((Date) value, formatter);
+					encodedValues.add(encodedValue);
+				} else {
+					ScalarType scalarType = (ScalarType) type;
+					String encodedValue = scalarType.instanceToString(value);
+					encodedValues.add(encodedValue);
+				}
+				break;
+			}			case setType:
 			case listType:
 				CollectionType collectionType = (CollectionType) type;
 				GenericModelType elementType = collectionType.getCollectionElementType();
