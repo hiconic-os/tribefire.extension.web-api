@@ -19,6 +19,10 @@ import com.braintribe.common.attribute.TypeSafeAttribute;
 import com.braintribe.model.DdraEndpoint;
 import com.braintribe.model.generic.eval.EvalContextAspect;
 
+/**
+ * @deprecated Use the copy: {@link dev.hiconic.servlet.ddra.endpoints.api.DdraEndpointAspect}
+ */
+@Deprecated
 public interface DdraEndpointAspect extends TypeSafeAttribute<DdraEndpoint>, EvalContextAspect<DdraEndpoint> {
 	// Intentionally left blank
 }

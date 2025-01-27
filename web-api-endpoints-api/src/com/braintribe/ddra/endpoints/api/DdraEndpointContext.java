@@ -33,7 +33,10 @@ import com.braintribe.utils.lcd.StopWatch;
  * 
  * Since this class is the only class that contains data for a single call, and an instance of this class is created for
  * each incoming call, the Servlets that use this are de-facto thread-safe.
+ *
+ * @deprecated Use the copy: {@link dev.hiconic.servlet.ddra.endpoints.api.DdraEndpointContext}
  */
+@Deprecated
 public class DdraEndpointContext<E extends DdraEndpoint> {
 
 	private final HttpServletRequest request;
