@@ -17,10 +17,8 @@ package com.braintribe.ddra.endpoints.api;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -31,7 +29,6 @@ import com.braintribe.codec.marshaller.api.IdentityManagementMode;
 import com.braintribe.codec.marshaller.api.IdentityManagementModeOption;
 import com.braintribe.codec.marshaller.api.Marshaller;
 import com.braintribe.codec.marshaller.api.MarshallerRegistry;
-import com.braintribe.codec.marshaller.api.MarshallerRegistryEntry;
 import com.braintribe.codec.marshaller.api.OutputPrettiness;
 import com.braintribe.codec.marshaller.api.TypeExplicitness;
 import com.braintribe.codec.marshaller.api.TypeExplicitnessOption;
@@ -61,8 +58,9 @@ import com.braintribe.model.service.api.result.Neutral;
 import com.braintribe.utils.lcd.StringTools;
 
 /**
- * TODO this should be split up and wired into where it's needed...
+ * @deprecated Use the copy: {@link dev.hiconic.servlet.ddra.endpoints.api.DdraEndpointsUtils}
  */
+@Deprecated
 public class DdraEndpointsUtils {
 
 	public static final String APPLICATION_JSON = "application/json";
@@ -227,62 +225,6 @@ public class DdraEndpointsUtils {
 
 		context.setMimeType(mimeType);
 		context.setMarshaller(marshaller);
-	}
-
-	private static String selectMimeType(List<MarshallerRegistryEntry> entries, List<String> preferedMimeTypes) {
-		int firstFoundMimeTypeIndex = -1;
-
-		for (MarshallerRegistryEntry entry : entries) {
-			String mimeType = entry.getMimeType();
-			int indexOfFound = preferedMimeTypes.indexOf(mimeType);
-
-			if (indexOfFound >= 0 && (firstFoundMimeTypeIndex == -1 || indexOfFound < firstFoundMimeTypeIndex)) {
-				firstFoundMimeTypeIndex = indexOfFound;
-			}
-		}
-
-		if (firstFoundMimeTypeIndex >= 0) {
-			return preferedMimeTypes.get(firstFoundMimeTypeIndex);
-		}
-
-		return entries.get(0).getMimeType();
-	}
-
-	// TODO UNUSED as of 20.7.2021. Delete if not needed!!!
-	private static String getOutMimeTypeFor(MarshallerRegistry registry, DdraEndpoint endpoint, String defaultMimeType) {
-		List<String> preferedMimeTypes = new ArrayList<>(); // in case of wildcard matches these mime types have
-															// priority
-		if (defaultMimeType != null) {
-			preferedMimeTypes.add(defaultMimeType);
-		}
-		preferedMimeTypes.add(APPLICATION_JSON);
-
-		String firstMatch = null;
-
-		for (String accept : endpoint.getAccept()) {
-			String mimeType = getMimeType(accept);
-
-			List<MarshallerRegistryEntry> entries = registry.getMarshallerRegistryEntries(mimeType);
-			if (entries.isEmpty()) {
-				continue;
-			}
-
-			if (firstMatch == null) {
-				firstMatch = selectMimeType(entries, preferedMimeTypes);
-			}
-
-			if (defaultMimeType == null) {
-				return firstMatch;
-			}
-
-			for (MarshallerRegistryEntry entry : entries) {
-				if (entry.getMimeType().equals(defaultMimeType)) {
-					return defaultMimeType;
-				}
-			}
-		}
-
-		return firstMatch != null ? firstMatch : APPLICATION_JSON;
 	}
 
 	/**

@@ -15,6 +15,8 @@
 // ============================================================================
 package com.braintribe.model.processing.ddra.endpoints.rest.v2.handlers;
 
+import static com.braintribe.utils.SysPrint.spOut;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -375,6 +377,7 @@ public class RestV2GetEntitiesHandlerTest extends AbstractRestV2Test {
 
 		ComplexEntity entity = results.get(0);
 		AnotherComplexEntity entity1 = entity.getAnotherComplexEntityProperty();
+		spOut(entity1);
 		Assert.assertNull(entity1.getAnotherComplexEntityProperty());
 	}
 

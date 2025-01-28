@@ -26,6 +26,7 @@ import com.braintribe.model.generic.eval.EvalException;
 import com.braintribe.model.generic.eval.Evaluator;
 import com.braintribe.model.service.api.AuthorizedRequest;
 import com.braintribe.model.service.api.DispatchableRequest;
+import com.braintribe.model.service.api.DomainRequest;
 import com.braintribe.model.service.api.ServiceRequest;
 import com.braintribe.processing.async.api.AsyncCallback;
 
@@ -86,12 +87,12 @@ public class TestRestEvaluator implements Evaluator<ServiceRequest> {
 		if (!(evaluable instanceof AuthorizedRequest)) {
 			throw new IllegalArgumentException("Expected service request to be AuthorizedRequest");
 		}
-		if (!(evaluable instanceof DispatchableRequest)) {
+		if (!(evaluable instanceof DomainRequest)) {
 			throw new IllegalArgumentException("Expected service request to be DispatchableRequest");
 		}
 
 		String sessionId = ((AuthorizedRequest) evaluable).getSessionId();
-		String accessId = ((DispatchableRequest) evaluable).getServiceId();
+		String accessId = ((DomainRequest) evaluable).getDomainId();
 
 		if (sessionId == null) {
 			throw new AuthorizationException("No provided sessionId.");

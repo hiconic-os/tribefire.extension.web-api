@@ -184,7 +184,7 @@ public class RestV2PostPropertiesHandlerTest extends AbstractRestV2Test {
 				.urlParameter("sessionId", "anything")
 				.accept(JSON)
 				.contentType(JSON)
-				.body("{ \"_type\": \"map\", \"value\": [{ \"key\": 1, \"value\": \"4\" }, { \"key\": 3, \"value\": \"5\"} , { \"key\": 17, \"value\": \"6\"} ] }")
+				.body("{ \"_type\": \"map\", \"value\": [1,\"4\",3,\"5\",17,\"6\"] }")
 				.execute(200);
 		//@formatter:on
 
@@ -238,7 +238,7 @@ public class RestV2PostPropertiesHandlerTest extends AbstractRestV2Test {
 				.urlParameter("sessionId", "anything")
 				.accept(JSON)
 				.contentType(JSON)
-				.body("{ \"_type\": \"map\", \"value\": [{ \"key\": 1, \"value\": 2 }, { \"key\": 3, \"value\": 4} , { \"key\": 5, \"value\": 6} ] }")
+				.body("{ \"_type\": \"map\", \"value\": [1,2,3,4,5,6] }")
 				.execute(200);
 		//@formatter:on
 
@@ -257,7 +257,7 @@ public class RestV2PostPropertiesHandlerTest extends AbstractRestV2Test {
 				.urlParameter("remove", "true")
 				.accept(JSON)
 				.contentType(JSON)
-				.body("{ \"_type\": \"map\", \"value\": [{ \"key\": 2, \"value\": \"2\" }, { \"key\": 4, \"value\": \"4\"} ] }")
+				.body("{ \"_type\": \"map\", \"value\": [2,\"2\",4,\"4\"] }")
 				.execute(200);
 		//@formatter:on
 
@@ -314,7 +314,7 @@ public class RestV2PostPropertiesHandlerTest extends AbstractRestV2Test {
 				.urlParameter("remove", "true")
 				.accept(JSON)
 				.contentType(JSON)
-				.body("{ \"_type\": \"map\", \"value\": [{ \"key\": 2, \"value\": 12 }, { \"key\": 4, \"value\": 14} ] }")
+				.body("{ \"_type\": \"map\", \"value\": [2,12,4,14] }")
 				.execute(200);
 		//@formatter:on
 
