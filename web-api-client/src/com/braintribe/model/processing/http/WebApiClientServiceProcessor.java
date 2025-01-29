@@ -15,9 +15,14 @@
 // ============================================================================
 package com.braintribe.model.processing.http;
 
+import java.util.function.Consumer;
+
 import com.braintribe.cfg.Configurable;
 import com.braintribe.cfg.Required;
 import com.braintribe.exception.HttpException;
+import com.braintribe.gm.model.http.reason.HttpReason;
+import com.braintribe.gm.model.reason.Maybe;
+import com.braintribe.gm.model.reason.UnsatisfiedMaybeTunneling;
 import com.braintribe.logging.Logger;
 import com.braintribe.model.processing.service.api.ServiceProcessor;
 import com.braintribe.model.processing.service.api.ServiceRequestContext;
@@ -63,9 +68,21 @@ public class WebApiClientServiceProcessor implements ServiceProcessor<ServiceReq
 			return response.combinedResponse();
 
 		} catch (HttpException e) {
-			context.getAspect(HttpStatusCodeNotification.class) //
-					.ifPresent(a -> a.accept(e.getStatusCode()));
-			return e.getPayload();
+			logger.debug(() -> "HTTP execution for ServiceRequest: " + (request != null ? request.entityType().getTypeSignature() : "null")
+					+ " failed with status code: " + e.getStatusCode() + " and payload " + e.getPayload() + " after: " + watch.getElapsedTime()
+					+ " ms.");
+
+			Consumer<Integer> aspect = context.findAspect(HttpStatusCodeNotification.class);
+			if (aspect != null) {
+				logger.debug(() -> "Notifying HttpStatusCodeNotification aspect about HTTP status code: " + e.getStatusCode());
+				aspect.accept(e.getStatusCode());
+				return e.getPayload();
+			}
+			HttpReason reason = HttpReason.T.create();
+			reason.setHttpCode(e.getStatusCode());
+			reason.setHttpPayload(e.getPayload() != null ? e.getPayload().toString() : null);
+			UnsatisfiedMaybeTunneling exc = new UnsatisfiedMaybeTunneling(Maybe.empty(reason));
+			throw exc;
 		} finally {
 			logger.debug(() -> "Finished HTTP execution for ServiceRequest: " + (request != null ? request.entityType().getTypeSignature() : "null")
 					+ " after: " + watch.getElapsedTime() + "ms.");

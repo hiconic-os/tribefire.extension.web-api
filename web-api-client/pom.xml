@@ -68,5 +68,10 @@ limitations under the License.
             <artifactId>gm-session-api</artifactId>
             <version>${V.com.braintribe.gm}</version>
         </dependency>
+		<dependency>
+			<groupId>tribefire.extension.web-api</groupId>
+			<artifactId>web-api-reason-model</artifactId>
+			<version>${V.tribefire.extension.web-api}</version>
+		</dependency>
     </dependencies>
 </project>

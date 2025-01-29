@@ -140,7 +140,7 @@ public class GmHttpClient implements HttpClient {
 	public void setMimeTypeRegistry(MimeTypeRegistry mimeTypeRegistry) {
 		this.mimeTypeRegistry = mimeTypeRegistry;
 	}
-	
+
 	@Configurable
 	public void setModelAccessoryFactory(ModelAccessoryFactory modelAccessoryFactory) {
 		this.modelAccessoryFactory = modelAccessoryFactory;
@@ -240,7 +240,7 @@ public class GmHttpClient implements HttpClient {
 
 					responseType = context.responseTypeForCode(code);
 					responseMarshaller = getMarshaller(context.produces());
-					
+
 					if (responseType != null && responseMarshaller != null) {
 
 						String streamContentResponseResourceProperty = context.streamContentResponseResourceProperty();
@@ -290,7 +290,7 @@ public class GmHttpClient implements HttpClient {
 						} else {
 
 							HttpDateFormatting dateFormatting = context.dateFormatting();
-							
+
 							GmDeserializationOptions options = //
 									GmDeserializationOptions //
 											.deriveDefaults() //
@@ -301,8 +301,7 @@ public class GmHttpClient implements HttpClient {
 											.set(DateFormatOption.class, dateFormatting != null ? dateFormatting.getDateFormat() : null) //
 											.set(DateDefaultZoneOption.class, dateFormatting != null ? dateFormatting.getDefaultZone() : null) //
 											.set(DateLocaleOption.class, dateFormatting != null ? dateFormatting.getDefaultLocale() : null) //
-											.set(CmdResolverOption.class, findCmdResolver())
-											.build();
+											.set(CmdResolverOption.class, findCmdResolver()).build();
 
 							responsePayload = responseMarshaller.unmarshall(in, options);
 							if (responsePayload == null && responseType.isEntity()) {
@@ -316,15 +315,15 @@ public class GmHttpClient implements HttpClient {
 						responseBuilder.isGeneric();
 					}
 
+					if (!context.wasSuccessful(code) && context.throwExceptionOnErrorCode(code)) {
+						HttpException ex = new HttpException(code, "Rest request responded with failure code: " + code);
+						ex.withPayload(responsePayload);
+						throw ex;
+					}
+
 					if (responsePayload == null && responseType == Neutral.T) {
 						responseBuilder.payload(Neutral.NEUTRAL);
 					} else {
-						if (!context.wasSuccessful(code) && context.throwExceptionOnErrorCode(code)) {
-							HttpException ex = new HttpException(code, "Rest request responded with failure code: " + code);
-							ex.withPayload(responsePayload);
-							throw ex;
-						}
-
 						responseBuilder.payload(responsePayload);
 						for (Header responseHeader : httpResponse.getAllHeaders()) {
 							responseBuilder.addHeaderParameter(responseHeader.getName(), responseHeader.getValue());
@@ -366,12 +365,12 @@ public class GmHttpClient implements HttpClient {
 	private CmdResolver findCmdResolver() {
 		if (modelAccessoryFactory == null)
 			return null;
-		
+
 		String domainId = AttributeContexts.peek().findOrNull(DomainIdAspect.class);
-		
+
 		if (domainId == null)
 			return null;
-		
+
 		return modelAccessoryFactory.getForServiceDomain(domainId).getCmdResolver();
 	}
 
@@ -486,6 +485,16 @@ public class GmHttpClient implements HttpClient {
 				baseType.getActualType(payload);
 			}
 
+			HttpDateFormatting dateFormatting = context.dateFormatting();
+			if (requestLogging != null && logger.isLevelEnabled(requestLogging)) {
+				if (dateFormatting != null) {
+					logger.log(requestLogging, "Outgoing date formatting: Format: " + dateFormatting.getDateFormat() + ", Default Zone: "
+							+ dateFormatting.getDefaultZone() + ", Default Locale: " + dateFormatting.getDefaultLocale());
+				} else {
+					logger.log(requestLogging, "No outgoing date formatting");
+				}
+			}
+
 			marshallingOptions = GmSerializationOptions.deriveDefaults() //
 					.set(EntityRecurrenceDepth.class, -1) //
 					.set(TypeExplicitnessOption.class, TypeExplicitness.never) //
@@ -493,6 +502,9 @@ public class GmHttpClient implements HttpClient {
 					.set(PropertySerializationTranslation.class, context::requestBodyParameterTranslation) //
 					.writeAbsenceInformation(false) //
 					.writeEmptyProperties(false) //
+					.set(DateDefaultZoneOption.class, dateFormatting != null ? dateFormatting.getDefaultZone() : null) //
+					.set(DateFormatOption.class, dateFormatting != null ? dateFormatting.getDateFormat() : null) //
+					.set(DateLocaleOption.class, dateFormatting != null ? dateFormatting.getDefaultLocale() : null) //
 					.inferredRootType(rootType) //
 					.build(); //
 		}
