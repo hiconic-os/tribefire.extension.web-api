@@ -170,7 +170,7 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 	private DdraMappings mappings;
 	private boolean pollMappings = true;
 	private long nextPoll = -1;
-	private long minPollInterval = Numbers.MILLISECONDS_PER_MINUTE;
+	private final long minPollInterval = Numbers.MILLISECONDS_PER_MINUTE;
 
 	private String defaultServiceDomain = "serviceDomain:default";
 	private Predicate<String> accessAvailability = this::serviceDomainExists;
@@ -900,19 +900,17 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 
 	public void ensureDdraMappingInitialized() throws StateChangeProcessorException {
 		long now = System.currentTimeMillis();
-		if (now < nextPoll) {
-			return;
-		}
-		nextPoll = now + minPollInterval;
-
-		PersistenceGmSession session = systemSessionFactory.newSession("cortex");
-		// Note that this type of query is quicker than searching for the entity directly by the globalId.
-		String queriedTimestamp = session.query().select(checkForDdraConfigUpdateQuery).first();
-
-		if (mappingsAreUpToDate(queriedTimestamp))
+		if (now < nextPoll)
 			return;
 
 		synchronized (this) {
+			if (now < nextPoll)
+				return;
+
+			PersistenceGmSession session = systemSessionFactory.newSession("cortex");
+			// Note that this type of query is quicker than searching for the entity directly by the globalId.
+			String queriedTimestamp = session.query().select(checkForDdraConfigUpdateQuery).first();
+
 			if (!mappingsAreUpToDate(queriedTimestamp)) {
 				DdraConfiguration configuration = session.query().entity(DdraConfiguration.T, "ddra:config")
 						.withTraversingCriterion(TC.create().negation().joker().done()).refresh();
@@ -922,6 +920,8 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 
 				mappingsTimestamp = queriedTimestamp;
 			}
+
+			nextPoll = now + minPollInterval;
 		}
 	}
 
