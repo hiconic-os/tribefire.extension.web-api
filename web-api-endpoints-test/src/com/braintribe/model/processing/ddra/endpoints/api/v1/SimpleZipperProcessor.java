@@ -15,25 +15,18 @@
 // ============================================================================
 package com.braintribe.model.processing.ddra.endpoints.api.v1;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UncheckedIOException;
-import java.net.URL;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
-import java.util.List;
-import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import com.braintribe.exception.Exceptions;
 import com.braintribe.model.processing.ddra.endpoints.api.v1.model.ZipRequestSimple;
-import com.braintribe.model.processing.ddra.endpoints.api.v1.model.ZipTask;
 import com.braintribe.model.processing.service.api.ServiceProcessor;
 import com.braintribe.model.processing.service.api.ServiceRequestContext;
 import com.braintribe.model.resource.Resource;
-import com.braintribe.utils.CollectionTools;
 import com.braintribe.utils.IOTools;
 import com.braintribe.utils.stream.api.StreamPipe;
 import com.braintribe.utils.stream.api.StreamPipes;
@@ -65,22 +58,6 @@ public class SimpleZipperProcessor implements ServiceProcessor<ZipRequestSimple,
 			throw Exceptions.unchecked(e, "I don't care what went wrong");
 		}
 
-	}
-
-	private List<InputStream> getInput(ZipTask zipTask) {
-		if (zipTask.getInputResources() != null)
-			return zipTask.getInputResources() //
-					.stream() //
-					.map(res -> res.openStream()) //
-					.collect(Collectors.toList());
-
-		URL resource = getClass().getResource("zip-default-resource.txt.vm");
-
-		try {
-			return CollectionTools.getList(resource.openStream());
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
 	}
 
 }

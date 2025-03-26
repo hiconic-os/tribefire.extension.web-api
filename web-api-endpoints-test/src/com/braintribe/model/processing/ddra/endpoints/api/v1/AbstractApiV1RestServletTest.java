@@ -108,7 +108,6 @@ public abstract class AbstractApiV1RestServletTest extends AbstractDdraRestServl
 		servlet.setModelAccessoryFactory(modelAccessoryFactory);
 		DdraMappings mappings = new DdraMappings();
 
-		WebApiConfigurationInitializer dci = new WebApiConfigurationInitializer();
 		servlet.setMappings(mappings);
 
 		setupStandardUndertowServer("/tribefire-services", "service-servlet", servlet, "/api/v1/*", "/api/v1");

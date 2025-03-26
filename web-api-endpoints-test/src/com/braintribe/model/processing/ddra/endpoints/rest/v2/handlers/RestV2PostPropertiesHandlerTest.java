@@ -15,6 +15,14 @@
 // ============================================================================
 package com.braintribe.model.processing.ddra.endpoints.rest.v2.handlers;
 
+import java.io.IOException;
+
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import com.braintribe.model.accessapi.ManipulationResponse;
 import com.braintribe.model.processing.ddra.endpoints.rest.v2.AbstractRestV2Test;
 import com.braintribe.model.service.api.result.Failure;
@@ -22,9 +30,6 @@ import com.braintribe.testing.model.test.technical.features.CollectionEntity;
 import com.braintribe.testing.model.test.technical.features.ComplexEntity;
 import com.braintribe.utils.MapTools;
 import com.braintribe.utils.lcd.CollectionTools;
-import org.junit.*;
-
-import java.io.IOException;
 
 public class RestV2PostPropertiesHandlerTest extends AbstractRestV2Test {
 

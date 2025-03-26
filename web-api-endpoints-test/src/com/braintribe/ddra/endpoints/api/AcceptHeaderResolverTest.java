@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.junit.Test;
 
+@SuppressWarnings("deprecation")
 public class AcceptHeaderResolverTest {
 
 	private static final String ANY_ANY = "*/*";

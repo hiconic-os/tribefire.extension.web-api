@@ -17,7 +17,6 @@ package com.braintribe.model.processing.ddra.endpoints.api.v1.model;
 
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.EntityTypes;
-import com.braintribe.model.service.api.ServiceRequest;
 
 public interface TestPostServiceRequest extends TestServiceRequestWithValue {
 

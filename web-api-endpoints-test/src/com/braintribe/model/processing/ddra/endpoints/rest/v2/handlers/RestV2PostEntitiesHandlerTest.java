@@ -128,7 +128,7 @@ public class RestV2PostEntitiesHandlerTest extends AbstractRestV2Test {
 	public void noIdMultipleEntitiesCreate() {
 		String stringProperty = "Created via REST!";
 		//@formatter:off
-		List ids = requests.post(getPathEntities(SimpleEntity.T))
+		List<?> ids = requests.post(getPathEntities(SimpleEntity.T))
 				.urlParameter("sessionId", "anything")
 				.urlParameter("listEntitiesRequest", "true")
 				.accept(JSON)
@@ -144,7 +144,7 @@ public class RestV2PostEntitiesHandlerTest extends AbstractRestV2Test {
 	public void noIdMultipleEntitiesCreateHeaderParam() {
 		String stringProperty = "Created via REST!";
 		//@formatter:off
-		List ids = requests.post(getPathEntities(SimpleEntity.T))
+		List<?> ids = requests.post(getPathEntities(SimpleEntity.T))
 				.urlParameter("sessionId", "anything")
 				.header("gm-list-entities-request", "true")
 				.accept(JSON)
@@ -161,7 +161,7 @@ public class RestV2PostEntitiesHandlerTest extends AbstractRestV2Test {
 		List<GenericEntity> entities = getEntities(SimpleEntity.T);
 		String stringProperty = "Created via REST!";
 		//@formatter:off
-		List ids = requests.post(getPathEntities(SimpleEntity.T))
+		List<?> ids = requests.post(getPathEntities(SimpleEntity.T))
 				.urlParameter("sessionId", "anything")
 				.urlParameter("listEntitiesRequest", "true")
 				.accept(JSON)

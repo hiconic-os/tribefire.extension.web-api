@@ -19,15 +19,15 @@ import com.braintribe.model.generic.base.EnumBase;
 import com.braintribe.model.generic.reflection.EnumType;
 import com.braintribe.model.generic.reflection.EnumTypes;
 
-public enum MaybeOption implements EnumBase {
+public enum MaybeOption implements EnumBase<MaybeOption> {
 	complete,
 	incomplete,
 	empty;
 
-	public static final EnumType T = EnumTypes.T(MaybeOption.class);
+	public static final EnumType<MaybeOption> T = EnumTypes.T(MaybeOption.class);
 
 	@Override
-	public EnumType type() {
+	public EnumType<MaybeOption> type() {
 		return T;
 	}
 }

@@ -16,16 +16,11 @@
 package com.braintribe.model.processing.ddra.endpoints.api.v1.model;
 
 import java.util.List;
-import java.util.Map;
 
-import com.braintribe.model.generic.eval.EvalContext;
-import com.braintribe.model.generic.eval.Evaluator;
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.EntityTypes;
-import com.braintribe.model.resource.Resource;
 import com.braintribe.model.service.api.AuthorizedRequest;
 import com.braintribe.model.service.api.DomainRequest;
-import com.braintribe.model.service.api.ServiceRequest;
 
 public interface ZipRequest extends AuthorizedRequest, DomainRequest {
 

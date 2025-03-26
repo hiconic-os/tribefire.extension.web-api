@@ -367,8 +367,6 @@ public class ApiV1RestServletBasicTest extends AbstractApiV1RestServletTest {
 	}
 
 	private void testComplexServiceRequestWithHeader(RequestMethod method, String requestMimeType, String responseMimeType) {
-		String value = "test_" + method.toString() + "_" + requestMimeType;
-
 		//@formatter:off
 		TestComplexServiceRequest result = requests.request(method)
 				.path("/tribefire-services/api/v1/test.access/"+ TestComplexServiceRequest.T.getTypeSignature())
@@ -454,7 +452,15 @@ public class ApiV1RestServletBasicTest extends AbstractApiV1RestServletTest {
 	 */
 	@Test
 	public void urlGETWithServiceDomainAndMissingTypeSignature() {
-		requests.get("tribefire-services/api/v1/test.access").contentType(JSON).accept(JSON).execute(500);
+		// We can remove the "_type" information from the response
+		System.setProperty("TRIBEFIRE_EXCEPTION_EXPOSITION", "false");
+		Map<String, String> failureMap = requests.get("tribefire-services/api/v1/test.access").contentType(JSON).accept(JSON).execute(500);
+		assertThat(failureMap.keySet()).containsExactly("tracebackId", "message");
+
+		// Check that our test has no side effects - removing the ENV restores original behavior
+		System.getProperties().remove("TRIBEFIRE_EXCEPTION_EXPOSITION");
+		Failure failure = requests.get("tribefire-services/api/v1/test.access").contentType(JSON).accept(JSON).execute(500);
+		assertThat(failure).isNotNull();
 	}
 
 	/**

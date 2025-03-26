@@ -15,11 +15,10 @@
 // ============================================================================
 package com.braintribe.model.processing.ddra.endpoints.api.v1.model;
 
+import java.util.List;
+
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.EntityTypes;
-import com.braintribe.model.service.api.ServiceRequest;
-
-import java.util.List;
 
 public interface TestComplexServiceRequest extends BasicTestServiceRequest {
 

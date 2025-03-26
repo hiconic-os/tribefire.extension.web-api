@@ -93,13 +93,14 @@ public class ApiV1RestServletExtendedTest extends AbstractApiV1RestServletTest {
 		
 		// ========== Fourth case ===========
 		
-		// There is no Embedded metadata on the user property so it should not have been created
+		// There is no Embedded metadata on the 'user' property so it should not have been created
 		// This means that setting it via the property path notation is illegal
 
 		Failure failure = testHttpRequestSupplier.get()
 				.paramViaHeaderOrUrl("user.name", "Vasily Kalinnikov")
 				.execute(400);
 		
+		assertThat(failure).isNotNull();
 	}
 	
 	@Test

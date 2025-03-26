@@ -36,7 +36,6 @@ import com.braintribe.model.processing.service.api.ServiceRequestContext;
 import com.braintribe.model.resource.Resource;
 import com.braintribe.utils.CollectionTools;
 import com.braintribe.utils.CommonTools;
-import com.braintribe.utils.IOTools;
 import com.braintribe.utils.stream.MultiplierOutputStream;
 import com.braintribe.utils.stream.api.StreamPipe;
 import com.braintribe.utils.stream.api.StreamPipes;
@@ -72,14 +71,12 @@ public class ZipperProcessor implements ServiceProcessor<ZipRequest, Object> {
 				MessageDigest md5Instance = MessageDigest.getInstance("MD5");
 				try (MultiplierOutputStream multiOut = new MultiplierOutputStream(outputStreams);
 						ZipOutputStream zipOutputStream = new ZipOutputStream(new DigestOutputStream(multiOut, md5Instance))) {
-					long bytesWritten = 0;
 					int i = 0;
 					for (InputStream inputResourceStream : getInput(task)) {
 						zipOutputStream.putNextEntry(new ZipEntry(task.getName() + (i++)));
-						bytesWritten += IOTools.transferBytes(inputResourceStream, zipOutputStream);
+						inputResourceStream.transferTo(zipOutputStream);
 					}
 					if (zipOutResource != null) {
-						// zipOutResource.setFileSize(bytesWritten);
 						zipOutResource.setMd5(CommonTools.printHexBinary(md5Instance.digest()));
 					}
 				}

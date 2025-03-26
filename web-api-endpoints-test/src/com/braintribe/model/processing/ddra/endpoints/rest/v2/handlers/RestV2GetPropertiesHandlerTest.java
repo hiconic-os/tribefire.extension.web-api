@@ -15,15 +15,16 @@
 // ============================================================================
 package com.braintribe.model.processing.ddra.endpoints.rest.v2.handlers;
 
-import com.braintribe.model.processing.ddra.endpoints.rest.v2.AbstractRestV2Test;
-import com.braintribe.model.query.PropertyQueryResult;
-import com.braintribe.testing.model.test.technical.features.SimpleEntity;
+import java.io.IOException;
+
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
+import com.braintribe.model.processing.ddra.endpoints.rest.v2.AbstractRestV2Test;
+import com.braintribe.model.query.PropertyQueryResult;
+import com.braintribe.testing.model.test.technical.features.SimpleEntity;
 
 public class RestV2GetPropertiesHandlerTest extends AbstractRestV2Test {
 

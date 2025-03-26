@@ -19,15 +19,15 @@ import com.braintribe.model.generic.base.EnumBase;
 import com.braintribe.model.generic.reflection.EnumType;
 import com.braintribe.model.generic.reflection.EnumTypes;
 
-public enum TestEnum implements EnumBase {
+public enum TestEnum implements EnumBase<TestEnum> {
 	value1,
 	value2,
 	value3;
 
-	public static final EnumType T = EnumTypes.T(TestEnum.class);
+	public static final EnumType<TestEnum> T = EnumTypes.T(TestEnum.class);
 
 	@Override
-	public EnumType type() {
+	public EnumType<TestEnum> type() {
 		return T;
 	}
 }

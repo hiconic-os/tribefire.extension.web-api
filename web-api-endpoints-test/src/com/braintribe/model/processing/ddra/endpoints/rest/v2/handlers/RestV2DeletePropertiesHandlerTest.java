@@ -15,23 +15,25 @@
 // ============================================================================
 package com.braintribe.model.processing.ddra.endpoints.rest.v2.handlers;
 
-import com.braintribe.model.accessapi.ManipulationResponse;
-import com.braintribe.model.generic.GenericEntity;
-import com.braintribe.model.processing.ddra.endpoints.TestHttpRequest;
-import com.braintribe.model.processing.ddra.endpoints.rest.v2.AbstractRestV2Test;
-import com.braintribe.testing.model.test.technical.features.AnotherComplexEntity;
-import com.braintribe.testing.model.test.technical.features.CollectionEntity;
-import com.braintribe.testing.model.test.technical.features.ComplexEntity;
-import com.braintribe.testing.model.test.technical.features.PrimitiveTypesEntity;
-import com.braintribe.utils.MapTools;
-import com.braintribe.utils.lcd.CollectionTools;
-import org.junit.*;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import com.braintribe.model.accessapi.ManipulationResponse;
+import com.braintribe.model.generic.GenericEntity;
+import com.braintribe.model.processing.ddra.endpoints.TestHttpRequest;
+import com.braintribe.model.processing.ddra.endpoints.rest.v2.AbstractRestV2Test;
+import com.braintribe.testing.model.test.technical.features.ComplexEntity;
+import com.braintribe.testing.model.test.technical.features.PrimitiveTypesEntity;
+import com.braintribe.utils.lcd.CollectionTools;
 
 public class RestV2DeletePropertiesHandlerTest extends AbstractRestV2Test {
 
