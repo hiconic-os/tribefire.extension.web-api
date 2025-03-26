@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.io.UncheckedIOException;
+import java.io.Writer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -195,6 +196,13 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 
 	@Override
 	protected void handleGet(ApiV1EndpointContext context) throws IOException {
+		if (context.getRequest().getPathInfo().equals("/")) {
+			try (Writer writer = context.getResponse().getWriter()) {
+				writer.write("Web-Api Endpoint");
+				return;
+			}
+		}
+		
 		handleMethodWithoutBody(context);
 	}
 
