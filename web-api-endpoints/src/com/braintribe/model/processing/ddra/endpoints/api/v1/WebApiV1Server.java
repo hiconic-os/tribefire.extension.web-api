@@ -198,7 +198,9 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 	protected void handleGet(ApiV1EndpointContext context) throws IOException {
 		String pathInfo = context.getRequest().getPathInfo();
 		if (pathInfo == null || pathInfo.isEmpty() || pathInfo.equals("/")) {
-			try (Writer writer = context.getResponse().getWriter()) {
+			HttpServletResponse response = context.getResponse();
+			response.setContentType("text/plain");
+			try (Writer writer = response.getWriter()) {
 				writer.write("Web-Api Endpoint");
 				return;
 			}

@@ -467,8 +467,9 @@ public class ApiV1RestServletBasicTest extends AbstractApiV1RestServletTest {
 	 * 500 response as InvalidArgument
 	 */
 	@Test
-	public void missingServiceDomainAndTypeSignature() {
-		requests.get("tribefire-services/api/v1").contentType(JSON).accept(JSON).execute(500);
+	public void testBaseUrlOk() {
+		requests.get("tribefire-services/api/v1").contentType(JSON).accept(JSON).execute(200);
+		requests.get("tribefire-services/api/v1/").contentType(JSON).accept(JSON).execute(200);
 	}
 
 	@Test
