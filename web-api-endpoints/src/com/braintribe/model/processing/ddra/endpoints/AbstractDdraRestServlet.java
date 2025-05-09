@@ -122,8 +122,8 @@ public abstract class AbstractDdraRestServlet<Context extends DdraEndpointContex
 			boolean abortFound = false;
 			Throwable t = e;
 			for (int i = 0; i < 3 && t != null; ++i) {
-				String message = t.getMessage();
-				if (message != null && message.contains("ClientAbortException")) {
+				String exceptionType = t.getClass().getName();
+				if (exceptionType != null && exceptionType.contains("ClientAbortException")) {
 					abortFound = true;
 					break;
 				}
