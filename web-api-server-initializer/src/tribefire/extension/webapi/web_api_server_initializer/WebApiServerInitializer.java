@@ -90,7 +90,6 @@ import com.braintribe.wire.api.util.Sets;
 
 import tribefire.cortex.initializer.support.api.WiredInitializerContext;
 import tribefire.cortex.initializer.support.impl.AbstractInitializer;
-import tribefire.cortex.model.check.CheckCoverage;
 import tribefire.extension.webapi.web_api_server_initializer.wire.WebApiServerInitializerWireModule;
 import tribefire.extension.webapi.web_api_server_initializer.wire.contract.ExistingInstancesContract;
 import tribefire.extension.webapi.web_api_server_initializer.wire.contract.WebApiServerInitializerMainContract;
@@ -98,7 +97,6 @@ import tribefire.extension.webapi.web_api_server_initializer.wire.contract.WebAp
 public class WebApiServerInitializer extends AbstractInitializer<WebApiServerInitializerMainContract> {
 	private static final String DDRA_MAPPING_TAG_SECURITY = "Security";
 	private static final String DDRA_MAPPING_TAG_SESSIONS = "Sessions";
-	private static final String DDRA_MAPPING_TAG_LICENSE = "License";
 	private static final String DDRA_MAPPING_TAG_ACCESSES = "Deployed Accesses";
 	private static final String DDRA_MAPPING_TAG_RESOURCES = "Resources";
 	private static final String DDRA_MAPPING_TAG_MONITORING = "Monitoring";
@@ -122,8 +120,8 @@ public class WebApiServerInitializer extends AbstractInitializer<WebApiServerIni
 			WebApiServerInitializerMainContract initializerMainContract) {
 
 		initializeDdraMappingMonitor(context, initializerMainContract);
-		initializeStreamingAop(context, initializerMainContract);
-		initializeDdraMappings(context, initializerMainContract);
+		initializeStreamingAop(context);
+		initializeDdraMappings(context);
 	}
 
 	private void initializeDdraMappingMonitor(PersistenceInitializationContext context, WebApiServerInitializerMainContract initializerMainContract) {
@@ -153,7 +151,7 @@ public class WebApiServerInitializer extends AbstractInitializer<WebApiServerIni
 		cortexModel.getDependencies().add(model);
 	}
 
-	private void initializeDdraMappings(PersistenceInitializationContext context, WebApiServerInitializerMainContract initializerMainContract) {
+	private void initializeDdraMappings(PersistenceInitializationContext context) {
 		WebApiConfigurationInitializer initializer = new WebApiConfigurationInitializer();
 		initializer.setConfigurer((session, registry) -> {
 			// Platform Domain
@@ -284,9 +282,7 @@ public class WebApiServerInitializer extends AbstractInitializer<WebApiServerIni
 					Sets.set(DDRA_MAPPING_TAG_CHECKS), configureReachabilityAndHighOutputPrettiness);
 
 			RunDistributedCheckBundles run = session.create(RunDistributedCheckBundles.T, "b9265418-8e97-4424-9e0a-32153bf0d715");
-			run.setIsPlatformRelevant(true);
-			run.setCoverage(Sets.set(CheckCoverage.vitality));
-			run.setAggregateBy(Lists.list(CbrAggregationKind.node));
+			run.setAggregateBy(Lists.list(CbrAggregationKind.processor));
 
 			StaticPrototyping p = session.create(StaticPrototyping.T, "6d453267-7891-41a2-a649-31392e2b00d3");
 			p.setPrototype(run);
@@ -304,7 +300,7 @@ public class WebApiServerInitializer extends AbstractInitializer<WebApiServerIni
 		initializer.initialize(context);
 	}
 
-	private void initializeStreamingAop(PersistenceInitializationContext context, WebApiServerInitializerMainContract initializerMainContract) {
+	private void initializeStreamingAop(PersistenceInitializationContext context) {
 		// TODO: direct applying of metadata on a skeleton model is not recommended - rethink where to actually put the metadata
 		// on and how that model
 		// is being respected during resource processing
