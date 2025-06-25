@@ -282,7 +282,7 @@ public class WebApiServerInitializer extends AbstractInitializer<WebApiServerIni
 					Sets.set(DDRA_MAPPING_TAG_CHECKS), configureReachabilityAndHighOutputPrettiness);
 
 			RunDistributedCheckBundles run = session.create(RunDistributedCheckBundles.T, "b9265418-8e97-4424-9e0a-32153bf0d715");
-			run.setAggregateBy(Lists.list(CbrAggregationKind.processor));
+			run.setAggregateBy(Lists.list(CbrAggregationKind.node));
 
 			StaticPrototyping p = session.create(StaticPrototyping.T, "6d453267-7891-41a2-a649-31392e2b00d3");
 			p.setPrototype(run);
