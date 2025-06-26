@@ -119,6 +119,7 @@ import com.braintribe.model.processing.web.rest.impl.QueryParamDecoder;
 import com.braintribe.model.prototyping.api.PrototypingRequest;
 import com.braintribe.model.query.SelectQuery;
 import com.braintribe.model.resource.CallStreamCapture;
+import com.braintribe.model.resource.FileResource;
 import com.braintribe.model.resource.Resource;
 import com.braintribe.model.resource.source.ResourceSource;
 import com.braintribe.model.resource.source.TransientSource;
@@ -793,7 +794,7 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 			}
 
 			try (OutputStream responseOut = context.openResponseOutputStream()) {
-				if (resource.isTransient()) {
+				if (resource.isTransient() || resource instanceof FileResource) {
 					resource.writeToStream(responseOut);
 				} else {
 					// TODO: Abstract resource streaming to the service domain level
