@@ -60,6 +60,7 @@ public class WebRpcServerModuleSpace implements TribefireModuleContract {
 		
 		webRegistry.threadRenamingFilter().addPattern(RPC_FILTER_PATTERN);
 		webRegistry.compressionFilter().addPattern(RPC_FILTER_PATTERN);
+		webRegistry.lenientAuthFilter().addPattern(RPC_FILTER_PATTERN);
 	}
 
 	@Managed

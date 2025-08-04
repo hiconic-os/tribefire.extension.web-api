@@ -83,6 +83,8 @@ import com.braintribe.model.securityservice.GetCurrentUser;
 import com.braintribe.model.securityservice.Logout;
 import com.braintribe.model.securityservice.OpenUserSessionWithUserAndPassword;
 import com.braintribe.model.securityservice.ValidateUserSession;
+import com.braintribe.model.securityservice.web.GetWebAuthorization;
+import com.braintribe.model.securityservice.web.UserPassWebAuthenticate;
 import com.braintribe.model.service.api.PlatformRequest;
 import com.braintribe.wire.api.module.WireTerminalModule;
 import com.braintribe.wire.api.util.Lists;
@@ -159,6 +161,14 @@ public class WebApiServerInitializer extends AbstractInitializer<WebApiServerIni
 					PlatformRequest.platformDomainId, Sets.set(DDRA_MAPPING_TAG_SECURITY));
 			registry.create("/logout", Logout.T, DdraUrlMethod.POST, null, "application/json", PlatformRequest.platformDomainId,
 					Sets.set(DDRA_MAPPING_TAG_SECURITY));
+			
+			
+			registry.create("/web-auth/user-pass-authenticate", UserPassWebAuthenticate.T, DdraUrlMethod.POST, null, "application/json",
+					PlatformRequest.platformDomainId, Sets.set(DDRA_MAPPING_TAG_SECURITY));
+			registry.create("/web-auth/authorization", GetWebAuthorization.T, DdraUrlMethod.GET, null, null,
+					PlatformRequest.platformDomainId, Sets.set(DDRA_MAPPING_TAG_SECURITY));
+			registry.create("/web-auth/authorization", GetWebAuthorization.T, DdraUrlMethod.POST, null, null,
+					PlatformRequest.platformDomainId, Sets.set(DDRA_MAPPING_TAG_SECURITY));
 
 			registry.create("/gmql", GmqlRequest.T, DdraUrlMethod.GET, null, "application/json", PlatformRequest.platformDomainId,
 					Sets.set(DDRA_MAPPING_TAG_QUERY));
