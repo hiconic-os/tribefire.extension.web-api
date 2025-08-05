@@ -19,15 +19,15 @@ import com.braintribe.model.generic.base.EnumBase;
 import com.braintribe.model.generic.reflection.EnumType;
 import com.braintribe.model.generic.reflection.EnumTypes;
 
-public enum DdraEndpointDepthKind implements EnumBase {
+public enum DdraEndpointDepthKind implements EnumBase<DdraEndpointDepthKind> {
 	shallow,
 	reachable,
 	custom;
 
-	public static final EnumType T = EnumTypes.T(DdraEndpointDepthKind.class);
-	
+	public static final EnumType<DdraEndpointDepthKind> T = EnumTypes.T(DdraEndpointDepthKind.class);
+
 	@Override
-	public EnumType type() {
+	public EnumType<DdraEndpointDepthKind> type() {
 		return T;
-	}	
+	}
 }

@@ -50,14 +50,16 @@ public class TcSpace implements TribefireModuleContract {
 	
 	@Managed
 	private TraversingCriterion tcShallow() {
+		// @formatter:off
 		return TC.create()
-		.conjunction()
-		.property()
-		.typeCondition(orTc(
-			isKind(TypeKind.collectionType),
-			isKind(TypeKind.entityType)
-		))
-		.close()
-		.done();
+			.conjunction()
+				.property()
+				.typeCondition(orTc(
+					isKind(TypeKind.collectionType),
+					isKind(TypeKind.entityType)
+				))
+			.close()
+			.done();
+		// @formatter:on
 	}
 }

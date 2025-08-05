@@ -65,16 +65,18 @@ public class DdraTraversingCriteriaMap {
 	
 	private TraversingCriterion createFor(int depth) {
 		TraversingCriterion shallow = getCriterion(DdraEndpointDepthKind.shallow);
+
+		int recursionDepth = Math.max(1, depth + 1);
 		
 		// @formatter:off
 		return TC.create()
-				.pattern() // pattern 1
-					.recursion(depth, depth)
-						.pattern() // pattern 2
+				.conjunction() // conjunction
+					.recursion(recursionDepth, recursionDepth)
+						.pattern() // pattern 1
 							.entity()
 							.disjunction() // disjunction 1
 								.property()
-								.pattern() // pattern 3
+								.pattern() // pattern 2
 									.property()
 									.disjunction() // disjunction 2
 										.listElement()
@@ -82,11 +84,11 @@ public class DdraTraversingCriteriaMap {
 										.pattern().map().mapKey().close()
 										.pattern().map().mapValue().close()
 									.close() // disjunction 2
-								.close() // pattern 3
+								.close() // pattern 2
 							.close() // disjunction 1
-						.close() // pattern 2
+						.close() // pattern 1
 					.criterion(shallow)
-				.close() // pattern 1
+				.close() // conjunction
 			.done();
 		// @formatter:on
 	}

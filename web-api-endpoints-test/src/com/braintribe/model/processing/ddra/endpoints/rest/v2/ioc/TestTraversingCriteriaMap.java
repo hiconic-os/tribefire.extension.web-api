@@ -22,7 +22,6 @@ import com.braintribe.ddra.endpoints.api.DdraTraversingCriteriaMap;
 import com.braintribe.model.DdraEndpointDepthKind;
 import com.braintribe.model.generic.pr.criteria.TraversingCriterion;
 import com.braintribe.model.generic.processing.pr.fluent.TC;
-import com.braintribe.model.generic.typecondition.TypeConditions;
 import com.braintribe.model.generic.typecondition.basic.TypeKind;
 
 @SuppressWarnings("deprecation")
@@ -43,13 +42,12 @@ public class TestTraversingCriteriaMap {
 	private static TraversingCriterion standard() {
 		// @formatter:off
 		return TC.create()
-				.pattern()
-					.entity()
-					.conjunction()
-						.property()
-						.typeCondition(orTc(isKind(TypeKind.entityType), TypeConditions. isKind(TypeKind.collectionType)) )
-						
-					.close()
+				.conjunction()
+					.property()
+					.typeCondition(orTc(
+						isKind(TypeKind.entityType), 
+						isKind(TypeKind.collectionType))
+					)
 				.close()
 				.done();
 		// @formatter:on
