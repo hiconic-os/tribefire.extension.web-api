@@ -17,6 +17,7 @@ package tribefire.extension.webapi.web_api_server.wire.space;
 
 import com.braintribe.ddra.endpoints.api.api.v1.DdraMappings;
 import com.braintribe.model.ddra.DdraConfiguration;
+import com.braintribe.model.deployment.DeploymentStatus;
 import com.braintribe.model.extensiondeployment.HardwiredServicePostProcessor;
 import com.braintribe.model.extensiondeployment.HardwiredServicePreProcessor;
 import com.braintribe.model.processing.ddra.endpoints.DdraEndpointsExceptionHandler;
@@ -136,6 +137,8 @@ public class WebApiServerModuleSpace implements TribefireModuleContract {
 		bean.setName("HTTP Streaming PreProcessor");
 		bean.setExternalId("preprocessor.http.streaming");
 		bean.setGlobalId("hardwired:preprocessor/http.streaming");
+		bean.setAutoDeploy(true);
+		bean.setDeploymentStatus(DeploymentStatus.deployed);
 		return bean;
 	}
 
@@ -145,6 +148,8 @@ public class WebApiServerModuleSpace implements TribefireModuleContract {
 		bean.setName("HTTP Streaming PostProcessor");
 		bean.setExternalId("postprocessor.http.streaming");
 		bean.setGlobalId("hardwired:postprocessor/http.streaming");
+		bean.setAutoDeploy(true);
+		bean.setDeploymentStatus(DeploymentStatus.deployed);
 		return bean;
 	}
 
