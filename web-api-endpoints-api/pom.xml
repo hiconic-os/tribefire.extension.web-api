@@ -20,7 +20,7 @@ limitations under the License.
         <version>[1.0,1.1)</version>
     </parent>
     <artifactId>web-api-endpoints-api</artifactId>
-    <version>1.0.22</version>
+    <version>1.0.23</version>
     <properties>
         <archetype>library</archetype>
     </properties>
