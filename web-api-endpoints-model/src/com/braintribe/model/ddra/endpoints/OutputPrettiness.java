@@ -19,13 +19,16 @@ import com.braintribe.model.generic.base.EnumBase;
 import com.braintribe.model.generic.reflection.EnumType;
 import com.braintribe.model.generic.reflection.EnumTypes;
 
-public enum OutputPrettiness implements EnumBase {
-	none, low, mid, high;
+public enum OutputPrettiness implements EnumBase<OutputPrettiness> {
+	none,
+	low,
+	mid,
+	high;
 
-	public static final EnumType T = EnumTypes.T(OutputPrettiness.class);
-	
+	public static final EnumType<OutputPrettiness> T = EnumTypes.T(OutputPrettiness.class);
+
 	@Override
-	public EnumType type() {
+	public EnumType<OutputPrettiness> type() {
 		return T;
-	}	
+	}
 }

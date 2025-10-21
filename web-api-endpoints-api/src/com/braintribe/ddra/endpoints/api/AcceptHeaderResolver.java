@@ -24,10 +24,6 @@ import com.braintribe.codec.marshaller.api.MarshallerRegistryEntry;
 import com.braintribe.mimetype.MimeTypeParser;
 import com.braintribe.mimetype.ParsedMimeType;
 
-/**
- * @deprecated Use the copy: {@link dev.hiconic.servlet.ddra.endpoints.api.AcceptHeaderResolver}
- */
-@Deprecated
 public class AcceptHeaderResolver {
 	private final MarshallerRegistry registry;
 	private String internalMimeTypeBias = "application/json";

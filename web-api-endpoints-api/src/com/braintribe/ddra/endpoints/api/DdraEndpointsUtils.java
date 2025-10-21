@@ -57,10 +57,6 @@ import com.braintribe.model.service.api.ServiceRequest;
 import com.braintribe.model.service.api.result.Neutral;
 import com.braintribe.utils.lcd.StringTools;
 
-/**
- * @deprecated Use the copy: {@link dev.hiconic.servlet.ddra.endpoints.api.DdraEndpointsUtils}
- */
-@Deprecated
 public class DdraEndpointsUtils {
 
 	public static final String APPLICATION_JSON = "application/json";

@@ -15,10 +15,6 @@
 // ============================================================================
 package com.braintribe.ddra.endpoints.api;
 
-/**
- * @deprecated Use the copy: {@link dev.hiconic.servlet.ddra.endpoints.api.DdraTraversingCriteriaMap}
- */
-@Deprecated
 public class DdraTraversingCriteriaMap extends dev.hiconic.servlet.ddra.endpoints.api.DdraTraversingCriteriaMap {
 	// nothing to add
 }

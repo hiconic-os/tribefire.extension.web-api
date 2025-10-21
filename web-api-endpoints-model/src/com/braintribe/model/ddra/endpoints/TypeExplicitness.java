@@ -19,7 +19,7 @@ import com.braintribe.model.generic.base.EnumBase;
 import com.braintribe.model.generic.reflection.EnumType;
 import com.braintribe.model.generic.reflection.EnumTypes;
 
-public enum TypeExplicitness implements EnumBase {
+public enum TypeExplicitness implements EnumBase<TypeExplicitness> {
 	/**
 	 * The marshaller decides which of the other options it will choose. Look at the inidividual marshaller's to see for the individual case. 
 	 */
@@ -48,10 +48,10 @@ public enum TypeExplicitness implements EnumBase {
 	 */
 	never;
 
-	public static final EnumType T = EnumTypes.T(TypeExplicitness.class);
+	public static final EnumType<TypeExplicitness> T = EnumTypes.T(TypeExplicitness.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<TypeExplicitness> type() {
 		return T;
 	}	
 }
