@@ -55,7 +55,6 @@ import com.braintribe.utils.lcd.CollectionTools2;
 import com.braintribe.utils.stream.api.StreamPipes;
 import com.braintribe.web.credentials.extractor.ExistingSessionFromRequestParameterProvider;
 import com.braintribe.web.servlet.auth.AuthFilter;
-import com.braintribe.web.servlet.auth.cookie.DefaultCookieHandler;
 import com.braintribe.wire.api.annotation.Import;
 import com.braintribe.wire.api.annotation.Managed;
 import com.braintribe.wire.api.annotation.Scope;
@@ -145,8 +144,10 @@ public class MainSpace implements MainContract {
 	private AuthFilter authFilter() {
 		AuthFilter bean = new AuthFilter();
 		bean.setRequestEvaluator(serviceRequestEvaluator());
-		bean.setCookieHandler(new DefaultCookieHandler());
-		bean.setSessionCookieProvider(r -> null);
+		// Commented out because these methods do not exist anymore. Wonder how this
+		// never popped up.
+//		bean.setCookieHandler(new DefaultCookieHandler());
+//		bean.setSessionCookieProvider(r -> null);
 		bean.addWebCredentialProvider("request-parameter", existingSessionFromRequestParameterProvider());
 		return bean;
 	}
