@@ -18,6 +18,7 @@ package tribefire.cortex.openapi_v3.wire.space;
 import com.braintribe.model.openapi.servlets.OpenapiUiServlet;
 import com.braintribe.model.openapi.v3_0.export.ApiV1OpenapiProcessor;
 import com.braintribe.model.openapi.v3_0.export.EntityOpenapiProcessor;
+import com.braintribe.model.openapi.v3_0.export.OpenapiDescriptionResolverRegistryImpl;
 import com.braintribe.model.openapi.v3_0.export.PropertyOpenapiProcessor;
 import com.braintribe.wire.api.annotation.Import;
 import com.braintribe.wire.api.annotation.Managed;
@@ -58,10 +59,16 @@ public class OpenapiV3DeployablesSpace implements WireSpace {
 	public ApiV1OpenapiProcessor openapiServicesProcessor() {
 		ApiV1OpenapiProcessor bean = new ApiV1OpenapiProcessor();
 
+		bean.setDescriptionResolverRegistry(descriptionResolverRegistry());
 		bean.setCortexSessionFactory(systemUserRelated.cortexSessionSupplier());
 		bean.setModelAccessoryFactory(requestUserRelated.modelAccessoryFactory());
 
 		return bean;
+	}
+	
+	@Managed
+	public OpenapiDescriptionResolverRegistryImpl descriptionResolverRegistry() {
+		return new OpenapiDescriptionResolverRegistryImpl();
 	}
 
 	@Managed

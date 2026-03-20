@@ -48,6 +48,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.braintribe.cfg.Configurable;
 import com.braintribe.cfg.Required;
 import com.braintribe.common.attribute.AttributeContextBuilder;
 import com.braintribe.common.lcd.NotImplementedException;
@@ -61,6 +62,7 @@ import com.braintribe.logging.Logger;
 import com.braintribe.model.ddra.DdraMapping;
 import com.braintribe.model.ddra.endpoints.v2.RestV2Endpoint;
 import com.braintribe.model.generic.GenericEntity;
+import com.braintribe.model.generic.i18n.LocalizedString;
 import com.braintribe.model.generic.reflection.CollectionType;
 import com.braintribe.model.generic.reflection.CollectionType.CollectionKind;
 import com.braintribe.model.generic.reflection.EntityType;
@@ -92,12 +94,14 @@ import com.braintribe.model.openapi.v3_0.OpenapiSchema;
 import com.braintribe.model.openapi.v3_0.OpenapiServer;
 import com.braintribe.model.openapi.v3_0.OpenapiType;
 import com.braintribe.model.openapi.v3_0.api.OpenapiRequest;
+import com.braintribe.model.openapi.v3_0.export.OpenapiDescriptionResolverRegistryImpl.ResolverEntry;
 import com.braintribe.model.openapi.v3_0.export.attributes.CurrentSessionIdAttribute;
 import com.braintribe.model.openapi.v3_0.export.attributes.ReflectSubtypesAttribute;
 import com.braintribe.model.openapi.v3_0.export.attributes.ReflectSupertypesAttribute;
 import com.braintribe.model.openapi.v3_0.reference.CantBuildReferenceException;
 import com.braintribe.model.processing.meta.cmd.builders.EntityMdResolver;
 import com.braintribe.model.processing.meta.cmd.builders.EnumMdResolver;
+import com.braintribe.model.processing.meta.cmd.builders.MdResolver;
 import com.braintribe.model.processing.meta.cmd.builders.ModelMdResolver;
 import com.braintribe.model.processing.meta.cmd.builders.PropertyMdResolver;
 import com.braintribe.model.processing.meta.oracle.EntityTypeOracle;
@@ -121,6 +125,8 @@ import com.braintribe.model.user.User;
 import com.braintribe.model.usersession.UserSession;
 import com.braintribe.utils.DateTools;
 
+import tribefire.extension.webapi.openapi_v3.api.OpenapiDescriptionResolver;
+
 public abstract class AbstractOpenapiProcessor<R extends OpenapiRequest> implements ServiceProcessor<R, OpenApi> {
 
 	protected static final OpenapiMimeType[] ALL_MIME_TYPES = new OpenapiMimeType[] { APPLICATION_JSON, ALL };
@@ -137,11 +143,19 @@ public abstract class AbstractOpenapiProcessor<R extends OpenapiRequest> impleme
 
 	protected Supplier<PersistenceGmSession> cortexSessionFactory;
 	protected ModelAccessoryFactory modelAccessoryFactory;
+	private OpenapiDescriptionResolverRegistryImpl descriptionResolverRegistry;
+
 
 	private OpenapiResponse standardResponse400;
 	private OpenapiResponse standardResponse401;
 	private OpenapiResponse standardResponse404;
 	private OpenapiResponse standardResponse500;
+
+	
+	@Configurable
+	public void setDescriptionResolverRegistry(OpenapiDescriptionResolverRegistryImpl descriptionResolverRegistry) {
+		this.descriptionResolverRegistry = descriptionResolverRegistry;
+	}
 
 	private OpenApi createNewApi(String title, String basePath, String documentVersion) {
 		OpenApi api = OpenApi.T.create();
@@ -586,7 +600,9 @@ public abstract class AbstractOpenapiProcessor<R extends OpenapiRequest> impleme
 
 		schema.setTitle(title);
 		schema.setType(OpenapiType.OBJECT);
-		schema.setDescription(description(entityMdResolver).atEntity());
+		DescriptionBuilder descBuilder = new DescriptionBuilder();
+		resolveEntityDescription(descBuilder, entityMdResolver, context);
+		schema.setDescription(descBuilder.asString());
 
 		if (reflectTypeHierarchy(context))
 			context.getEntityTypeOracle(entityType) //
@@ -604,6 +620,55 @@ public abstract class AbstractOpenapiProcessor<R extends OpenapiRequest> impleme
 		}
 
 	}
+	
+	protected void resolveCustomEntityDescription(DescriptionBuilder descBuilder, EntityMdResolver entityMdResolver, OpenapiContext context) {
+		if (descriptionResolverRegistry == null)
+			return;
+		
+		ModelMdResolver modelMdResolver = context.getMetaData();
+		
+		for (ResolverEntry resolverEntry : descriptionResolverRegistry.getResolvers()) {
+			OpenapiDescriptionResolver resolver = resolverEntry.resolver();
+			resolver.resolveEntityDescription(modelMdResolver, entityMdResolver, descBuilder);
+		}
+	}
+	
+	protected void resolveEntityDescription(DescriptionBuilder descBuilder, EntityMdResolver entityMdResolver, OpenapiContext context) {
+		resolveStandardDescription(descBuilder, entityMdResolver);
+		resolveCustomEntityDescription(descBuilder, entityMdResolver, context);
+	}
+	
+	private void resolvePropertyDescription(DescriptionBuilder descBuilder, Property property, EntityMdResolver entityMdResolver, OpenapiContext context) {
+		PropertyMdResolver propertyMdResolver = entityMdResolver.property(property);
+		resolveStandardDescription(descBuilder, propertyMdResolver);
+		resolveCustomPropertyDescription(descBuilder, propertyMdResolver, context);
+	}
+
+	private void resolveCustomPropertyDescription(DescriptionBuilder descBuilder, PropertyMdResolver propertyMdResolver, OpenapiContext context) {
+		if (descriptionResolverRegistry == null)
+			return;
+		
+		ModelMdResolver modelMdResolver = context.getMetaData();
+		
+		for (ResolverEntry resolverEntry : descriptionResolverRegistry.getResolvers()) {
+			OpenapiDescriptionResolver resolver = resolverEntry.resolver();
+			resolver.resolvePropertyDescription(modelMdResolver, propertyMdResolver, descBuilder);
+		}
+	}
+
+	private void resolveStandardDescription(DescriptionBuilder descBuilder, MdResolver<?> mdResolver) {
+		Description desc = mdResolver.meta(Description.T).exclusive();
+		if (desc == null)
+			return;
+		
+		LocalizedString ls = desc.getDescription();
+			
+		if (ls == null)
+			return;
+		
+		descBuilder.add(ls.value());
+	}
+
 
 	private void fillPropertySchema(EntityMdResolver entityMdResolver, Property property, OpenapiSchema schema, OpenapiContext context) {
 		fillPropertySchema(entityMdResolver, property, property.getName(), schema, context);
@@ -611,8 +676,9 @@ public abstract class AbstractOpenapiProcessor<R extends OpenapiRequest> impleme
 
 	private void fillPropertySchema(EntityMdResolver entityMdResolver, Property property, String propertyName, OpenapiSchema schema,
 			OpenapiContext context) {
-		String description = description(entityMdResolver).atProperty(property);
-		OpenapiSchema basicPropertySchema = getPropertySchema(property, context, description, entityMdResolver);
+		DescriptionBuilder descBuilder = new DescriptionBuilder();
+		resolvePropertyDescription(descBuilder, property, entityMdResolver, context);
+		OpenapiSchema basicPropertySchema = getPropertySchema(property, context, descBuilder.asString(), entityMdResolver);
 
 		schema.getProperties().put(propertyName, basicPropertySchema);
 		if (isMandatory(entityMdResolver).atProperty(property)) {
@@ -742,13 +808,14 @@ public abstract class AbstractOpenapiProcessor<R extends OpenapiRequest> impleme
 
 		EntityMdResolver entityMdResolver = context.getMetaData().entityType(entityType);
 
-		String description = description(entityMdResolver).atProperty(property);
+		DescriptionBuilder descBuilder = new DescriptionBuilder();
+		resolvePropertyDescription(descBuilder, property, entityMdResolver, context);
 
-		parameter.setDescription(description);
+		parameter.setDescription(descBuilder.asString());
 		parameter.setRequired(isMandatory(entityMdResolver).atProperty(property));
 
 		parameter.setName(name);
-		parameter.setSchema(getPropertySchema(property, context, description, entityMdResolver));
+		parameter.setSchema(getPropertySchema(property, context, descBuilder.asString(), entityMdResolver));
 		parameter.setIn(in);
 
 		return parameter;

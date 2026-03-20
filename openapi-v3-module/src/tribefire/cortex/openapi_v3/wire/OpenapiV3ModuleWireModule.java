@@ -27,5 +27,4 @@ public enum OpenapiV3ModuleWireModule implements StandardTribefireModuleWireModu
 	public Class<? extends TribefireModuleContract> moduleSpaceClass() {
 		return OpenapiV3ModuleSpace.class;
 	}
-
 }

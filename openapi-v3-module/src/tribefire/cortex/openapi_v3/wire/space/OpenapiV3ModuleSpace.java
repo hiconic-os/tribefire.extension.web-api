@@ -25,12 +25,15 @@ import com.braintribe.wire.api.annotation.Import;
 import com.braintribe.wire.api.annotation.Managed;
 
 import tribefire.cortex.openapi_v3.impl.OpenApiLandingPageLinkConfigurer;
+import tribefire.extension.webapi.openapi_v3.api.OpenapiDescriptionResolverRegistry;
+import tribefire.extension.webapi.openapi_v3.api.wire.contract.OpenapiV3ModuleContract;
 import tribefire.module.api.WebRegistryConfiguration;
+import tribefire.module.api.WireContractBindingBuilder;
 import tribefire.module.wire.contract.TribefireModuleContract;
 import tribefire.module.wire.contract.TribefireWebPlatformContract;
 
 @Managed
-public class OpenapiV3ModuleSpace implements TribefireModuleContract {
+public class OpenapiV3ModuleSpace implements TribefireModuleContract, OpenapiV3ModuleContract {
 
 	private static final String CORTEX = "cortex";
 
@@ -39,6 +42,11 @@ public class OpenapiV3ModuleSpace implements TribefireModuleContract {
 	
 	@Import
 	private OpenapiV3DeployablesSpace deployables;
+	
+	@Override
+	public void bindWireContracts(WireContractBindingBuilder bindings) {
+		bindings.bind(OpenapiV3ModuleContract.class, this);
+	}
 
 	@Override
 	public void bindHardwired() {
@@ -82,6 +90,11 @@ public class OpenapiV3ModuleSpace implements TribefireModuleContract {
 		OpenApiLandingPageLinkConfigurer bean = new OpenApiLandingPageLinkConfigurer();
 		bean.setModelAccessoryFactory(tfPlatform.requestUserRelated().modelAccessoryFactory());
 		return bean;
+	}
+	
+	@Override
+	public OpenapiDescriptionResolverRegistry descriptionResolverRegistry() {
+		return deployables.descriptionResolverRegistry();
 	}
 
 }

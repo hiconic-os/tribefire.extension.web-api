@@ -1,4 +1,4 @@
-<!--
+<?xml version="1.0" encoding="UTF-8"?><!--
 Copyright BRAINTRIBE TECHNOLOGY GMBH, Austria, 2002-2022
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,8 +21,7 @@ limitations under the License.
     </parent>
     <artifactId>openapi-v3-module</artifactId>
     <version>1.0.14</version>
-    <properties>
-    </properties>
+    <properties/>
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>
@@ -52,14 +51,6 @@ limitations under the License.
             <groupId>tribefire.extension.web-api</groupId>
             <artifactId>openapi-v3-model</artifactId>
             <version>${V.tribefire.extension.web-api}</version>
-            <?tag asset?>
-        </dependency>
-        <dependency>
-            <groupId>tribefire.extension.web-api</groupId>
-            <artifactId>web-api-server-module</artifactId>
-            <version>${V.tribefire.extension.web-api}</version>
-            <classifier>asset</classifier>
-            <type>man</type>
             <?tag asset?>
         </dependency>
     </dependencies>

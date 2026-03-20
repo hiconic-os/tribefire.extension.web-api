@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.braintribe.cfg.Configurable;
+import com.braintribe.cfg.Required;
 import com.braintribe.ddra.MetadataUtils;
 import com.braintribe.model.ddra.DdraConfiguration;
 import com.braintribe.model.ddra.DdraMapping;
@@ -72,7 +73,7 @@ public class ApiV1OpenapiProcessor extends AbstractOpenapiProcessor<OpenapiServi
 	private Set<String> allUseCases;
 
 	private boolean autoUpdateDdraMappings = true;
-
+	
 	@Override
 	protected void init() {
 		if (ddraConfiguration == null) {
@@ -252,13 +253,13 @@ public class ApiV1OpenapiProcessor extends AbstractOpenapiProcessor<OpenapiServi
 		OpenapiOperation operation = createOperation(context, responseType, isAuthorizedRequest, potentialReasonTypes);
 
 		EntityMdResolver requestTypeMdResolver = requestResolvingContext.getMetaData().entityType(requestType);
-		String requestEntityDescription = description(requestTypeMdResolver).atEntity();
+		
+		DescriptionBuilder descBuilder = new DescriptionBuilder();
+		
+		descBuilder.add("Mapped endpoint for <b>" + requestType.getTypeSignature() + "</b><br>");
+		
+		resolveEntityDescription(descBuilder, requestTypeMdResolver, context);
 		String requestEntityName = MetadataUtils.name(requestTypeMdResolver).atEntity();
-
-		String description = "Mapped endpoint for <b>" + requestType.getTypeSignature() + "</b><br>";
-
-		if (requestEntityDescription != null)
-			description += requestEntityDescription;
 
 		String summary = requestEntityName;
 
@@ -266,7 +267,7 @@ public class ApiV1OpenapiProcessor extends AbstractOpenapiProcessor<OpenapiServi
 			summary = summaryFromTypeSignature(requestType);
 		}
 
-		operation.setDescription(description);
+		operation.setDescription(descBuilder.asString());
 		operation.setSummary(summary);
 
 		switch (mapping.getMethod()) {
