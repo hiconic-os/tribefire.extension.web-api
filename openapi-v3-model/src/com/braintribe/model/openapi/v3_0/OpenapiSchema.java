@@ -46,6 +46,9 @@ public interface OpenapiSchema extends WithFormat, WithType, JsonReferencable {
 	Object getDefault();
 	void setDefault(Object defaultValue);
 
+	String getPattern();
+	void setPattern(String pattern);
+
 	Object getMinimum();
 	void setMinimum(Object minimum);
 

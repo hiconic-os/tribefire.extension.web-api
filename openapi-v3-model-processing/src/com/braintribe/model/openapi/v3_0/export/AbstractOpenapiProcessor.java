@@ -383,6 +383,11 @@ public abstract class AbstractOpenapiProcessor<R extends OpenapiRequest> impleme
 			if (maxLength != null) {
 				valueTypeSchema.setMaxLength(maxLength.getLength());
 			}
+			
+			var pattern = propertyMdResolver.meta(com.braintribe.model.meta.data.constraint.Pattern.T).exclusive();
+			
+			if (pattern != null && pattern.getExpression() != null)
+				valueTypeSchema.setPattern(pattern.getExpression());
 
 		} else if (valueTypeSchema.getType() == OpenapiType.ARRAY) {
 			MinLength minLength = propertyMdResolver.meta(MinLength.T).exclusive();
