@@ -31,6 +31,7 @@ import com.braintribe.model.generic.reflection.Property;
 import com.braintribe.processing.http.client.HttpClient;
 import com.braintribe.processing.http.client.HttpDateFormatting;
 import com.braintribe.processing.http.client.HttpParameter;
+import com.braintribe.processing.http.client.HttpMultipartFormData;
 import com.braintribe.processing.http.client.HttpRequestContext;
 import com.braintribe.processing.http.client.HttpRequestContextBuilder;
 import com.braintribe.utils.lcd.CollectionTools2;
@@ -67,6 +68,7 @@ public class BasicRequestContextBuilder implements HttpRequestContextBuilder {
 	private String dateDefaultZone = null;
 	private String dateDefaultLocale = null;
 	private boolean streamResourceContent = false;
+	private HttpMultipartFormData multipartFormData;
 	private String streamContentResponseResourceProperty;
 
 	// ***************************************************************************************************
@@ -257,6 +259,12 @@ public class BasicRequestContextBuilder implements HttpRequestContextBuilder {
 	}
 
 	@Override
+	public HttpRequestContextBuilder multipartFormData(HttpMultipartFormData multipartFormData) {
+		this.multipartFormData = multipartFormData;
+		return this;
+	}
+
+	@Override
 	public HttpRequestContextBuilder streamContentResponseResourceProperty(String streamContentResponseResourceProperty) {
 		this.streamContentResponseResourceProperty = streamContentResponseResourceProperty;
 		return this;
@@ -370,6 +378,11 @@ public class BasicRequestContextBuilder implements HttpRequestContextBuilder {
 			@Override
 			public boolean streamResourceContent() {
 				return streamResourceContent;
+			}
+
+			@Override
+			public HttpMultipartFormData multipartFormData() {
+				return multipartFormData;
 			}
 
 			@Override

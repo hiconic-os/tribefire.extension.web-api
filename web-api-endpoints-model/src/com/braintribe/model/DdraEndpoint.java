@@ -32,7 +32,7 @@ public interface DdraEndpoint extends DdraEndpointHeaders {
 	OutputPrettiness getPrettiness();
 	void setPrettiness(OutputPrettiness prettiness);
 
-	@Initializer("'3'")
+	@Initializer("'reachable'")
 	String getDepth();
 	void setDepth(String depth);
 

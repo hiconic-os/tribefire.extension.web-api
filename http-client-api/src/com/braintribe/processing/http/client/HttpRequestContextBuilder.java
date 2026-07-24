@@ -87,6 +87,8 @@ public interface HttpRequestContextBuilder extends HttpConstants {
 
 	HttpRequestContextBuilder streamResourceContent(boolean streamResourceContent);
 
+	HttpRequestContextBuilder multipartFormData(HttpMultipartFormData multipartFormData);
+
 	HttpRequestContextBuilder responseBodyParameterTranslation(BiFunction<EntityType<?>, String, Property> responseBodyPropertyTranslation);
 
 	HttpRequestContextBuilder responseHeaderParameterTranslation(BiFunction<EntityType<?>, String, Property> responseBodyPropertyTranslation);

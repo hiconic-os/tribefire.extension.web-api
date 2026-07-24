@@ -27,4 +27,8 @@ public interface HttpDefaultSuccessResponseType extends EntityTypeMetaData {
 	GmType getResponseType();
 	void setResponseType(GmType responseType);
 
+	/** Annotation-friendly alternative to {@link #getResponseType()}. */
+	String getResponseTypeSignature();
+	void setResponseTypeSignature(String responseTypeSignature);
+
 }

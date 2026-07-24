@@ -48,5 +48,10 @@ limitations under the License.
 			<artifactId>web-api-client</artifactId>
 			<version>${V.tribefire.extension.web-api}</version>
 		</dependency>
+		<dependency>
+			<groupId>tribefire.extension.web-api</groupId>
+			<artifactId>web-api-client-meta-data-annotations</artifactId>
+			<version>${V.tribefire.extension.web-api}</version>
+		</dependency>
 	</dependencies>
 </project>

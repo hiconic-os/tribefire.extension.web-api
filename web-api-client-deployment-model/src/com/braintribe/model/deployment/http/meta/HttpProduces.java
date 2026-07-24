@@ -32,6 +32,10 @@ public interface HttpProduces extends HasMimeType {
 	
 	GmType getResponseType();
 	void setResponseType(GmType responseType);
+
+	/** Annotation-friendly alternative to {@link #getResponseType()}. */
+	String getResponseTypeSignature();
+	void setResponseTypeSignature(String responseTypeSignature);
 	
 	boolean getUseOriginalStatusCode();
 	void 	setUseOriginalStatusCode(boolean statusCode);
