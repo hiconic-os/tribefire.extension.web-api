@@ -7,5 +7,12 @@
     </parent>
     <artifactId>web-api-client-meta-data-annotations</artifactId>
     <version>1.0.2</version>
-    <dependencies/>
+    <dependencies>
+        <dependency>
+            <groupId>com.braintribe.gm</groupId>
+            <artifactId>gm-core-api</artifactId>
+            <version>${V.com.braintribe.gm}</version>
+            <?group functional?>
+        </dependency>
+    </dependencies>
 </project>
