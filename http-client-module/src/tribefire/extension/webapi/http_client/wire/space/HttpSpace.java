@@ -91,11 +91,13 @@ public class HttpSpace implements WireSpace {
 
 		if (certificate == null)
 			return trustAll ? new EasySslSocketFactoryProvider() : new StrictSslSocketFactoryProvider();
+		if (trustAll)
+			throw new IllegalStateException("An HTTP client certificate cannot be combined with disabled server certificate verification. "
+					+ "Mutual TLS authenticates this client to the server; it must not disable authentication of the server to this client.");
 
 		PemSslSocketFactoryProvider bean = new PemSslSocketFactoryProvider();
 		bean.setCertificatePem(certificate.getCertificate());
 		bean.setPrivateKeyPem(certificate.getPrivateKey());
-		bean.setTrustAll(trustAll);
 
 		return bean;
 	}

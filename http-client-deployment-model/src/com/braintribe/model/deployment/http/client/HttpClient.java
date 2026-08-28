@@ -19,6 +19,7 @@ import java.util.Map;
 
 import com.braintribe.model.deployment.connector.Connector;
 import com.braintribe.model.generic.annotation.Abstract;
+import com.braintribe.model.generic.annotation.meta.Confidential;
 import com.braintribe.model.generic.annotation.meta.DeployableComponent;
 import com.braintribe.model.generic.annotation.meta.Description;
 import com.braintribe.model.generic.annotation.meta.Name;
@@ -63,6 +64,7 @@ public interface HttpClient extends Connector {
 	void setVerifyServerHostname(Boolean verifyServerHostname);
 
 	@Name("Default Headers")
+	@Confidential
 	@Description("Static HTTP headers sent with every request of this client, e.g. gateway credentials like API key and API secret headers. "
 			+ "Headers of the individual request take precedence, i.e. a default header is only added if the request does not carry it already.")
 	Map<String, String> getDefaultHeaders();

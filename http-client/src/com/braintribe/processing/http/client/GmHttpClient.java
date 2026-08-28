@@ -27,6 +27,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -189,7 +190,18 @@ public class GmHttpClient implements HttpClient {
 	 */
 	@Configurable
 	public void setDefaultHeaders(Map<String, String> defaultHeaders) {
-		this.defaultHeaders = defaultHeaders == null ? Collections.emptyMap() : defaultHeaders;
+		if (defaultHeaders == null || defaultHeaders.isEmpty()) {
+			this.defaultHeaders = Collections.emptyMap();
+			return;
+		}
+
+		defaultHeaders.forEach((name, value) -> {
+			if (name == null || name.trim().isEmpty())
+				throw new IllegalArgumentException("A default HTTP header has no name.");
+			if (value == null)
+				throw new IllegalArgumentException("Default HTTP header '" + name + "' has no value.");
+		});
+		this.defaultHeaders = Collections.unmodifiableMap(new LinkedHashMap<>(defaultHeaders));
 	}
 
 	@Configurable

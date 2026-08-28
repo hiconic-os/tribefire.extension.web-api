@@ -119,6 +119,27 @@ public class GmHttpClientMultipartTest {
 		assertEquals("tag=one&tag=two", requestBuilder.getUri().getRawQuery());
 	}
 
+	@Test
+	public void appliesDefaultHeadersWithoutOverridingRequestHeaders() throws Exception {
+		GmHttpClient client = new GmHttpClient();
+		Map<String, String> defaults = new LinkedHashMap<>();
+		defaults.put("Gen-Client-Id", "default-id");
+		defaults.put("Gen-Client-Secret", "default-secret");
+		client.setDefaultHeaders(defaults);
+
+		HttpRequestContext context = HttpRequestContextBuilder.instance(null)
+				.requestPath("http://localhost/headers")
+				.addHeaderParameter("gen-client-id", "request-id")
+				.build();
+		Method method = GmHttpClient.class.getDeclaredMethod("requestBuilder", HttpRequestContext.class);
+		method.setAccessible(true);
+		RequestBuilder requestBuilder = (RequestBuilder) method.invoke(client, context);
+
+		assertEquals("request-id", requestBuilder.getFirstHeader("Gen-Client-Id").getValue());
+		assertEquals("default-secret", requestBuilder.getFirstHeader("Gen-Client-Secret").getValue());
+		assertEquals(1, requestBuilder.getHeaders("Gen-Client-Id").length);
+	}
+
 	private Resource resource(String name, String mimeType, String content) {
 		Resource resource = Resource.createTransient(() -> new java.io.ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)));
 		resource.setName(name);
