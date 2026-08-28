@@ -91,9 +91,10 @@ public class HttpClientModuleSpace implements TribefireModuleContract {
 		bean.setBaseUrl(deployable.getBaseUrl());
 		bean.setMimeTypeRegistry(resourceProcessing.mimeTypeRegistry());
 		bean.setMarshallerRegistry(tfPlatform.marshalling().registry());
-		bean.setHttpClientProvider(http.clientProvider());
+		bean.setHttpClientProvider(http.clientProviderFor(deployable));
 		bean.setHttpRequestConfig(buildRequestConfig(deployable));
 		bean.setCredentials(getCredentials(deployable));
+		bean.setDefaultHeaders(deployable.getDefaultHeaders());
 		bean.setRequestLogging(LogLevels.convert(deployable.getRequestLogging()));
 		bean.setResponseLogging(LogLevels.convert(deployable.getResponseLogging()));
 		bean.setEvaluator(tfPlatform.systemUserRelated().evaluator());
