@@ -27,8 +27,10 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.braintribe.cfg.Configurable;
 import com.braintribe.cfg.Required;
+import com.braintribe.ddra.endpoints.api.DdraEndpointsUtils;
 import com.braintribe.ddra.endpoints.api.rest.v2.CrudRequestTarget;
 import com.braintribe.ddra.endpoints.api.rest.v2.RestV2EndpointContext;
+import com.braintribe.gm.model.reason.UnsatisfiedMaybeTunneling;
 import com.braintribe.logging.Logger;
 import com.braintribe.model.ddra.endpoints.v2.DdraUrlPathParameters;
 import com.braintribe.model.ddra.endpoints.v2.RestV2Endpoint;
@@ -49,6 +51,7 @@ import com.braintribe.model.processing.web.rest.HttpExceptions;
 import com.braintribe.model.processing.web.rest.UrlPathCodec;
 import com.braintribe.model.processing.web.rest.impl.HttpRequestEntityDecoderUtils;
 import com.braintribe.model.query.EntityQuery;
+import com.braintribe.model.service.api.result.Unsatisfied;
 import com.braintribe.utils.StringTools;
 
 public class RestV2Server extends AbstractDdraRestServlet<RestV2EndpointContext<RestV2Endpoint>> {
@@ -119,7 +122,13 @@ public class RestV2Server extends AbstractDdraRestServlet<RestV2EndpointContext<
 		RestV2Handler<RestV2Endpoint> handler = getHandler(url, method);
 		if (handler == null)
 			HttpExceptions.methodNotAllowed("Unsupported method %s", method);
-		handler.handle(context);
+		try {
+			handler.handle(context);
+		} catch (UnsatisfiedMaybeTunneling e) {
+			context.getResponse().setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			computeOutMarshallerFor(context, null);
+			DdraEndpointsUtils.writeResponse(traversingCriteriaMap, context, Unsatisfied.from(e.getMaybe()), true);
+		}
 	}
 
 	private RestV2Handler<RestV2Endpoint> getHandler(String url, String method) {

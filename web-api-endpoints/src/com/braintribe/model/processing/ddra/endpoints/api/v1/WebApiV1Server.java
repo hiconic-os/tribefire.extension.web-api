@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
-import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.util.Arrays;
 import java.util.Collection;
@@ -59,12 +58,14 @@ import com.braintribe.ddra.endpoints.api.api.v1.ApiV1EndpointContext;
 import com.braintribe.ddra.endpoints.api.api.v1.DdraMappings;
 import com.braintribe.ddra.endpoints.api.api.v1.SingleDdraMapping;
 import com.braintribe.exception.Exceptions;
+import com.braintribe.exception.HttpException;
 import com.braintribe.gm.model.reason.Maybe;
 import com.braintribe.gm.model.reason.Reason;
 import com.braintribe.gm.model.reason.Reasons;
 import com.braintribe.gm.model.reason.UnsatisfiedMaybeTunneling;
 import com.braintribe.gm.model.reason.essential.InternalError;
 import com.braintribe.gm.model.reason.essential.InvalidArgument;
+import com.braintribe.gm.model.reason.essential.NotFound;
 import com.braintribe.gm.model.reason.meta.HttpStatusCode;
 import com.braintribe.gm.model.reason.meta.LogReason;
 import com.braintribe.logging.Logger;
@@ -107,7 +108,6 @@ import com.braintribe.model.processing.service.api.aspect.HttpStatusCodeNotifica
 import com.braintribe.model.processing.service.api.aspect.RequestTransportPayloadAspect;
 import com.braintribe.model.processing.session.api.managed.ModelAccessory;
 import com.braintribe.model.processing.session.api.managed.ModelAccessoryFactory;
-import com.braintribe.model.processing.session.api.managed.NotFoundException;
 import com.braintribe.model.processing.session.api.persistence.PersistenceGmSession;
 import com.braintribe.model.processing.sp.api.StateChangeProcessorException;
 import com.braintribe.model.processing.web.rest.HttpExceptions;
@@ -126,7 +126,6 @@ import com.braintribe.model.resource.source.TransientSource;
 import com.braintribe.model.service.api.ServiceRequest;
 import com.braintribe.model.service.api.result.Unsatisfied;
 import com.braintribe.utils.CollectionTools;
-import com.braintribe.utils.IOTools;
 import com.braintribe.utils.StringTools;
 import com.braintribe.utils.collection.api.ListMap;
 import com.braintribe.utils.collection.impl.HashListMap;
@@ -231,16 +230,14 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 	}
 
 	@Override
-	protected void handleOptions(ApiV1EndpointContext context) {
+	protected void handleOptions(ApiV1EndpointContext context) throws IOException {
+		context.setEndpoint(restServletUtils.createDefaultEndpoint(null));
 
 		Collection<String> mappedMethods = mappings.getMethods(getPathInfo(context));
 
 		if (mappedMethods.isEmpty()) {
-			decodePathAndFillContext(context);
-
-			if (context.getServiceRequestType() == null) {
-				throw new NotFoundException("No implicit or explicit mapping found for '" + getPathInfo(context) + "'.");
-			}
+			if (!decodePathAndFillContext(context))
+				return;
 
 			mappedMethods = Arrays.asList("GET", "POST");
 		}
@@ -251,11 +248,14 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 
 	@Override
 	protected ApiV1EndpointContext createContext(HttpServletRequest request, HttpServletResponse response) {
-		return new ApiV1EndpointContext(request, response, defaultServiceDomain);
+		ApiV1EndpointContext context = new ApiV1EndpointContext(request, response, defaultServiceDomain);
+		context.setMarshaller(marshallerRegistry.getMarshaller(DdraEndpointsUtils.APPLICATION_JSON));
+		context.setMimeType(DdraEndpointsUtils.APPLICATION_JSON);
+		return context;
 	}
 
 	@Override
-	protected boolean fillContext(ApiV1EndpointContext context) {
+	protected boolean fillContext(ApiV1EndpointContext context) throws IOException {
 		// check and load mappings if needed
 		if (pollMappings)
 			ensureDdraMappingInitialized();
@@ -264,39 +264,45 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 			handleOptions(context);
 			return false;
 		}
+		String pathInfo = context.getRequest().getPathInfo();
+		if ("GET".equals(context.getRequest().getMethod()) && (pathInfo == null || pathInfo.isEmpty() || "/".equals(pathInfo)))
+			return true;
 
 		// compute mapping of current request
-		SingleDdraMapping mapping = computeDdraMapping(context);
+		SingleDdraMapping mapping;
+		try {
+			mapping = computeDdraMapping(context);
+		} catch (IllegalArgumentException e) {
+			context.setEndpoint(restServletUtils.createDefaultEndpoint(null));
+			Collection<String> allowedMethods = mappings.getMethods(getPathInfo(context));
+			if (allowedMethods.isEmpty()) {
+				if (!decodePathAndFillContext(context))
+					return false;
+				allowedMethods = Arrays.asList("GET", "POST");
+			}
+			DdraEndpointsUtils.setAllowHeader(context, allowedMethods);
+			writeInvalidArgument(context, "HTTP method '" + context.getRequest().getMethod() + "' is not allowed for '"
+					+ getPathInfo(context) + "'", 405);
+			return false;
+		}
+		context.setEndpoint(restServletUtils.createDefaultEndpoint(mapping));
 
 		// get the entity type for the path or mapping
 		if (mapping == null) {
 			Collection<String> allowedHttpMethodsForMapping = mappings.getMethods(getPathInfo(context));
 
 			if (!allowedHttpMethodsForMapping.isEmpty()) {
-				// the mapping is available under a different method. Send 405
-				context.getResponse().setStatus(405);
 				DdraEndpointsUtils.setAllowHeader(context, allowedHttpMethodsForMapping);
-				commitResponse(context);
+				writeInvalidArgument(context,
+						"HTTP method '" + context.getRequest().getMethod() + "' is not allowed for '" + getPathInfo(context) + "'", 405);
 				return false;
 			}
 
-			decodePathAndFillContext(context);
+			if (!decodePathAndFillContext(context))
+				return false;
 		}
-
-		// get the out marshaller as early as possible to write exceptions with proper mimeType.
-		ApiV1DdraEndpoint endpoint = restServletUtils.createDefaultEndpoint(mapping);
-		context.setEndpoint(endpoint);
 
 		return true;
-	}
-
-	private void commitResponse(ApiV1EndpointContext context) {
-		try {
-			// commit response so that nothing can be accidentally added afterwards
-			context.getResponse().flushBuffer();
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
 	}
 
 	private void handleMethodWithoutBody(ApiV1EndpointContext context) throws IOException {
@@ -305,9 +311,11 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 		ServiceRequest service = null;
 		if (serviceRequestType != null) {
 			service = createDefaultRequest(serviceRequestType, context.getMapping());
-			decodeQueryAndFillContext(service, context);
+			if (!decodeQueryAndFillContext(service, context))
+				return;
 		} else {
-			throw new UnsatisfiedMaybeTunneling(Reasons.build(InvalidArgument.T).text("Missing service request type").toMaybe());
+			writeNotFound(context, "No service request type could be resolved", 404);
+			return;
 		}
 
 		// TODO
@@ -320,7 +328,8 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 		service = restServletUtils.computeTransformRequest(context, service);
 
 		// compute the output marshaller
-		computeOutMarshallerFor(context, context.getDefaultMimeType());
+		if (!prepareOutMarshaller(context))
+			return;
 
 		processRequestAndWriteResponse(context, service);
 	}
@@ -328,10 +337,12 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 	private void handleMethodWithBody(ApiV1EndpointContext context) throws IOException {
 		EntityType<? extends ServiceRequest> serviceRequestType = context.getServiceRequestType();
 
-		decodeQueryAndFillContext(null, context);
+		if (!decodeQueryAndFillContext(null, context))
+			return;
 
 		// compute output marshaller
-		computeOutMarshallerFor(context, context.getDefaultMimeType());
+		if (!prepareOutMarshaller(context))
+			return;
 
 		// TODO: remove
 		// if (serviceRequestType != null
@@ -369,29 +380,40 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 			String boundary = requestMultipartFormat.getParameter("boundary");
 
 			if (boundary == null) {
-				throw new IllegalArgumentException(
-						"Illegal Request: Content-Type was 'multipart/form-data' but without the mandatory 'boundary' parameter.");
+				writeInvalidArgument(context, "Content-Type 'multipart/form-data' requires a boundary parameter", 400);
+				return;
 			}
 
-			service = parseMultipartRequest(boundary, context);
+			Maybe<ServiceRequest> serviceMaybe = parseMultipartRequest(boundary, context);
+			if (serviceMaybe.isUnsatisfied()) {
+				writeUnsatisfied(context, endpoint, serviceMaybe, 400);
+				return;
+			}
+			service = serviceMaybe.get();
 		} else {
 
 			if ("application/x-www-form-urlencoded".equals(endpoint.getContentType())) {
-				ListMap<String, String> parameters = new HashListMap<>();
-				request.getParameterMap().forEach((k, v) -> parameters.put(k, Arrays.asList(v)));
+				try {
+					ListMap<String, String> parameters = new HashListMap<>();
+					request.getParameterMap().forEach((k, v) -> parameters.put(k, Arrays.asList(v)));
 
-				UrlEncodingMarshaller.EntityTemplateFactory rootEntityFactory = l -> requestAssemblyPartNames.stream().map(l::getSingleElement)
-						.filter(Objects::nonNull).findFirst().map(a -> {
-							CharacterMarshaller jsonMarshaller = (CharacterMarshaller) marshallerRegistry
-									.getMarshaller(DdraEndpointsUtils.APPLICATION_JSON);
-							return (GenericEntity) jsonMarshaller.unmarshall(new StringReader(a), options);
-						}).orElseGet(() -> createDefaultRequest(serviceRequestType, mapping));
+					UrlEncodingMarshaller.EntityTemplateFactory rootEntityFactory = l -> requestAssemblyPartNames.stream().map(l::getSingleElement)
+							.filter(Objects::nonNull).findFirst().map(a -> {
+								CharacterMarshaller jsonMarshaller = (CharacterMarshaller) marshallerRegistry
+										.getMarshaller(DdraEndpointsUtils.APPLICATION_JSON);
+								return (GenericEntity) jsonMarshaller.unmarshall(new StringReader(a), options);
+							}).orElseGet(() -> createDefaultRequest(serviceRequestType, mapping));
 
-				UrlEncodingMarshaller urlMarshaller = new UrlEncodingMarshaller(rootEntityFactory);
-				service = urlMarshaller.create(parameters, serviceRequestType, options);
+					service = new UrlEncodingMarshaller(rootEntityFactory).create(parameters, serviceRequestType, options);
+				} catch (Exception e) {
+					writeInvalidArgument(context, "Invalid form request body: " + parserMessage(e), 400);
+					return;
+				}
 			} else {
 
-				Marshaller inMarshaller = getInMarshallerFor(endpoint);
+				Marshaller inMarshaller = getInMarshaller(context, endpoint);
+				if (inMarshaller == null)
+					return;
 
 				boolean transportPayload = false;
 				if (mapping != null) {
@@ -408,13 +430,14 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 						context.setRequestTransportPayload(pipe::openInputStream);
 					}
 
-					try {
-						// Unmarshall the request from the body
-						service = (ServiceRequest) inMarshaller.unmarshall(in, options);
-
-					} catch (Exception e) {
-						throw exceptionWithPipeContent(pipeOut, in, pipe, inMarshaller, e);
+					Maybe<?> serviceMaybe = inMarshaller.unmarshallReasoned(in, options);
+					if (serviceMaybe.isUnsatisfied()) {
+						Maybe<Object> invalidBody = Reasons.build(InvalidArgument.T).text("Invalid HTTP request body") //
+								.cause(serviceMaybe.whyUnsatisfied()).toMaybe();
+						writeUnsatisfied(context, endpoint, invalidBody, 400);
+						return;
 					}
+					service = (ServiceRequest) serviceMaybe.get();
 				}
 			}
 		}
@@ -423,7 +446,8 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 			// If no body is provided at all the unmarshaller returns null. We supply a default in that case.
 			service = createDefaultRequest(serviceRequestType, mapping);
 		}
-		decodeQueryAndFillContext(service, context);
+		if (!decodeQueryAndFillContext(service, context))
+			return;
 
 		restServletUtils.ensureServiceDomain(service, context);
 		// get the transform request (from the mapping) if any
@@ -437,25 +461,6 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 		}
 
 		processRequestAndWriteResponse(context, service);
-	}
-
-	private RuntimeException exceptionWithPipeContent(OutputStream pipeOut, InputStream in, StreamPipe pipe, Marshaller inMarshaller, Throwable e) {
-		// We have to close the streams here. Otherwise, we cannot read the content of the pipe
-		IOTools.closeQuietly(pipeOut);
-		IOTools.closeQuietly(in);
-		String content = null;
-		if (inMarshaller instanceof CharacterMarshaller && pipe != null) {
-			try (InputStream pipeIn = pipe.openInputStream()) {
-				content = com.braintribe.utils.IOTools.slurp(pipeIn, "UTF-8");
-			} catch (Exception e2) {
-				logger.debug(() -> "Could not read content from stream pipe.", e2);
-				content = "<n/a>";
-			}
-		} else {
-			content = "<binary>";
-		}
-
-		return Exceptions.unchecked(e, "Could not parse the request from the body: " + content);
 	}
 
 	private ServiceRequest createDefaultRequest(EntityType<? extends ServiceRequest> serviceRequestType, SingleDdraMapping mapping) {
@@ -480,7 +485,7 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 		return (ServiceRequest) cortexSession.eval(requestPrototyping).get();
 	}
 
-	private ServiceRequest parseMultipartRequest(String boundary, ApiV1EndpointContext context) {
+	private Maybe<ServiceRequest> parseMultipartRequest(String boundary, ApiV1EndpointContext context) {
 		final ServiceRequest service;
 		RpcUnmarshallingStreamManagement streamManagement = context.getRequestStreamManagement();
 		EntityType<? extends ServiceRequest> serviceRequestType = context.getServiceRequestType();
@@ -493,18 +498,23 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 				StreamPipe pipe = streamPipeFactory.newPipe("Part-" + part.getName());
 				try (OutputStream pipeOut = pipe.acquireOutputStream(); InputStream in = new TeeInputStream(part.openStream(), pipeOut)) {
 					// get input marshaller
-					Marshaller marshaller = getInMarshallerFor(part.getContentType());
+					Marshaller marshaller;
+					try {
+						marshaller = getInMarshallerFor(part.getContentType());
+					} catch (HttpException e) {
+						return Reasons.build(InvalidArgument.T).text(parserMessage(e)).toMaybe();
+					}
 					// Unmarshall the request from the body
 					GmDeserializationOptions options = GmDeserializationOptions.defaultOptions.derive() //
 							.setInferredRootType(serviceRequestType) //
 							.set(EntityVisitorOption.class, streamManagement.getMarshallingVisitor()) //
 							.build();
 
-					try {
-						service = (ServiceRequest) marshaller.unmarshall(in, options);
-					} catch (Exception e) {
-						throw exceptionWithPipeContent(pipeOut, in, pipe, marshaller, e);
-					}
+					Maybe<?> serviceMaybe = marshaller.unmarshallReasoned(in, options);
+					if (serviceMaybe.isUnsatisfied())
+						return Reasons.build(InvalidArgument.T).text("Invalid serialized request part") //
+								.cause(serviceMaybe.whyUnsatisfied()).toMaybe();
+					service = (ServiceRequest) serviceMaybe.get();
 				}
 
 				part = formDataReader.next();
@@ -546,7 +556,7 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 				String partName = part.getName();
 
 				if (requestAssemblyPartNames.contains(partName)) {
-					throw new IllegalStateException("Duplicate request assembly part: " + part);
+					return Reasons.build(InvalidArgument.T).text("Duplicate request assembly part in multipart message: " + partName).toMaybe();
 				}
 
 				TransientSource transientSourceWithId = streamManagement.getTransientSourceWithId(partName);
@@ -567,8 +577,9 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 					if (resourceSource == null) {
 						resourceSource = createEmptyTransientSource(resource);
 					} else if (!(resourceSource instanceof TransientSource)) {
-						throw new IllegalArgumentException("Error while handling part '" + partName
-								+ "'. Can't assign binary data to a resource that has already a non-transient ResourceSource." + resource);
+						return Reasons.build(InvalidArgument.T) //
+								.text("Cannot assign binary multipart data to resource part '" + partName + "' because it already has a non-transient source") //
+								.toMaybe();
 					}
 
 					restServletUtils.processResourcePart(streamManagement, part, (TransientSource) resourceSource);
@@ -579,12 +590,14 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 				part = formDataReader.next();
 			}
 
+		} catch (UnsatisfiedMaybeTunneling e) {
+			return e.getMaybe();
 		} catch (Exception e) {
 			throw Exceptions.unchecked(e, "Error while reading multiparts");
 		}
 
 		streamManagement.checkPipeSatisfaction();
-		return service;
+		return Maybe.complete(service);
 	}
 
 	private Resource createEmptyTransientResource() {
@@ -690,16 +703,59 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 	}
 
 	private void writeUnsatisfied(ApiV1EndpointContext context, ApiV1DdraEndpoint endpoint, Maybe<?> maybe) throws IOException {
+		writeUnsatisfied(context, endpoint, maybe, null);
+	}
+
+	private void writeInvalidArgument(ApiV1EndpointContext context, String message, int httpStatusCode) throws IOException {
+		writeUnsatisfied(context, context.getEndpoint(), Reasons.build(InvalidArgument.T).text(message).toMaybe(), httpStatusCode);
+	}
+
+	private boolean prepareOutMarshaller(ApiV1EndpointContext context) throws IOException {
+		try {
+			computeOutMarshallerFor(context, context.getDefaultMimeType());
+			return true;
+		} catch (HttpException e) {
+			writeInvalidArgument(context, parserMessage(e), 406);
+			return false;
+		}
+	}
+
+	private Marshaller getInMarshaller(ApiV1EndpointContext context, DdraEndpoint endpoint) throws IOException {
+		try {
+			return getInMarshallerFor(endpoint);
+		} catch (HttpException e) {
+			writeInvalidArgument(context, parserMessage(e), 415);
+			return null;
+		}
+	}
+
+	private void writeNotFound(ApiV1EndpointContext context, String message, int httpStatusCode) throws IOException {
+		writeUnsatisfied(context, context.getEndpoint(), Reasons.build(NotFound.T).text(message).toMaybe(), httpStatusCode);
+	}
+
+	private static String parserMessage(Throwable throwable) {
+		String result = throwable.getClass().getSimpleName();
+		for (Throwable current = throwable; current != null && current != current.getCause(); current = current.getCause()) {
+			if (current.getMessage() != null && !current.getMessage().isBlank())
+				result = current.getMessage();
+		}
+		return result;
+	}
+
+	private void writeUnsatisfied(ApiV1EndpointContext context, ApiV1DdraEndpoint endpoint, Maybe<?> maybe, Integer statusCode) throws IOException {
 		Reason reason = maybe.whyUnsatisfied();
 
-		String domainId = context.getServiceDomain();
-
-		ModelAccessory modelAccessory = modelAccessoryFactory.getForServiceDomain(domainId);
-
-		EntityMdResolver reasonMdResolver = modelAccessory.getCmdResolver().getMetaData().lenient(true).entity(reason).useCase("ddra");
+		EntityMdResolver reasonMdResolver = null;
+		if (statusCode == null) {
+			String domainId = context.getServiceDomain();
+			ModelAccessory modelAccessory = modelAccessoryFactory.getForServiceDomain(domainId);
+			if (modelAccessory != null)
+				reasonMdResolver = modelAccessory.getCmdResolver().getMetaData().lenient(true).entity(reason).useCase("ddra");
+		}
 
 		// logging
-		LogReason logReason = Optional.ofNullable(reasonMdResolver.meta(LogReason.T).exclusive()).orElse(defaultLogging);
+		LogReason logReason = reasonMdResolver == null ? defaultLogging
+				: Optional.ofNullable(reasonMdResolver.meta(LogReason.T).exclusive()).orElse(defaultLogging);
 
 		LogLevel logLevel = logReason.getLevel();
 
@@ -715,8 +771,9 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 
 		// status code determination
 		if (!context.getResponse().isCommitted()) {
-			Optional<HttpStatusCode> statusOptional = Optional.ofNullable(reasonMdResolver.meta(HttpStatusCode.T).exclusive());
-			int httpStatusCode = statusOptional.map(HttpStatusCode::getCode).orElse(500);
+			Optional<HttpStatusCode> statusOptional = reasonMdResolver == null ? Optional.empty()
+					: Optional.ofNullable(reasonMdResolver.meta(HttpStatusCode.T).exclusive());
+			int httpStatusCode = statusCode != null ? statusCode : statusOptional.map(HttpStatusCode::getCode).orElse(500);
 
 			context.getResponse().setStatus(httpStatusCode);
 		}
@@ -818,11 +875,16 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 		return mapping;
 	}
 
-	private EntityType<? extends ServiceRequest> decodePathAndFillContext(ApiV1EndpointContext context) {
+	private boolean decodePathAndFillContext(ApiV1EndpointContext context) throws IOException {
 
 		DdraBaseUrlPathParameters pathParameters = DdraBaseUrlPathParameters.T.create();
 		// No mapping found. Identify type and domain from Path
-		URL_CODEC.decode(() -> pathParameters, getPathInfo(context));
+		try {
+			URL_CODEC.decode(() -> pathParameters, getPathInfo(context));
+		} catch (Exception e) {
+			writeInvalidArgument(context, "Invalid Web API request path: " + parserMessage(e), 400);
+			return false;
+		}
 
 		String serviceDomain = pathParameters.getServiceDomain();
 		if (serviceDomain == null) {
@@ -840,29 +902,39 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 		}
 
 		context.setServiceDomain(serviceDomain);
-		checkServiceDomain(context);
+		if (!checkServiceDomain(context))
+			return false;
 
 		// get the type signature from the path
 		String typeSignature = pathParameters.getTypeSignature();
 		if (StringUtils.isBlank(typeSignature)) {
-			return null;
+			if (requestMethodMayHaveBody(context.getRequest().getMethod()))
+				return true;
+			writeNotFound(context, "No implicit or explicit mapping found for '" + getPathInfo(context) + "'", 404);
+			return false;
 		}
 
 		// get the entity type from the type signature
 		EntityType<? extends ServiceRequest> entityType = restServletUtils.resolveTypeFromSignature(serviceDomain, typeSignature,
 				modelAccessoryFactory);
 		if (entityType == null) {
-			HttpExceptions.notFound("Cannot find service request with type signature %s", typeSignature);
+			writeNotFound(context, "Cannot find service request type '" + typeSignature + "'", 404);
+			return false;
 		}
 		if (!ServiceRequest.T.isAssignableFrom(entityType)) {
-			HttpExceptions.badRequest("Generic Entity %s is not a ServiceRequest.", typeSignature);
+			writeInvalidArgument(context, "Type '" + typeSignature + "' is not a ServiceRequest", 400);
+			return false;
 		}
 
 		context.setServiceRequestType(entityType);
-		return entityType;
+		return true;
 	}
 
-	private void decodeQueryAndFillContext(ServiceRequest service, ApiV1EndpointContext context) {
+	private static boolean requestMethodMayHaveBody(String method) {
+		return "POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method);
+	}
+
+	private boolean decodeQueryAndFillContext(ServiceRequest service, ApiV1EndpointContext context) throws IOException {
 		HttpRequestEntityDecoderOptions options = HttpRequestEntityDecoderOptions.defaults();
 		requestAssemblyPartNames.forEach(options::addIgnoredParameter);
 
@@ -892,17 +964,29 @@ public class WebApiV1Server extends AbstractDdraRestServlet<ApiV1EndpointContext
 
 		DdraEndpoint endpoint = context.getEndpoint();
 
-		decoder.target("endpoint", endpoint, ENDPOINT_MAPPER).decode();
+		try {
+			decoder.target("endpoint", endpoint, ENDPOINT_MAPPER).decode();
+		} catch (UnsatisfiedMaybeTunneling e) {
+			writeUnsatisfied(context, (ApiV1DdraEndpoint) endpoint, e.getMaybe(), 400);
+			return false;
+		} catch (HttpException e) {
+			writeInvalidArgument(context, parserMessage(e), 400);
+			return false;
+		}
 
 		DdraEndpointsUtils.computeDepth(endpoint);
+		return true;
 
 	}
 
-	private void checkServiceDomain(ApiV1EndpointContext context) {
+	private boolean checkServiceDomain(ApiV1EndpointContext context) throws IOException {
 		String serviceDomain = context.getServiceDomain();
-		if (!accessAvailability.test(serviceDomain))
-			HttpExceptions.notFound(
-					"No ServiceDomain or DdraMapping found for name: " + serviceDomain + " and HTTP method: " + context.getRequest().getMethod());
+		if (!accessAvailability.test(serviceDomain)) {
+			writeNotFound(context, "No service domain or mapping found for '" + serviceDomain + "' and HTTP method '"
+					+ context.getRequest().getMethod() + "'", 404);
+			return false;
+		}
+		return true;
 	}
 
 	// This allows the DdraConfigurationStateChangeProcessor to inform us that the configuration has changed.

@@ -21,6 +21,7 @@ import java.util.function.Supplier;
 
 import org.junit.Test;
 
+import com.braintribe.gm.model.reason.essential.InvalidArgument;
 import com.braintribe.model.ddra.DdraMapping;
 import com.braintribe.model.ddra.DdraUrlMethod;
 import com.braintribe.model.processing.ddra.endpoints.TestHttpRequest;
@@ -28,7 +29,7 @@ import com.braintribe.model.processing.ddra.endpoints.api.v1.model.TestServiceRe
 import com.braintribe.model.processing.ddra.endpoints.api.v1.model.ZipRequestSimple;
 import com.braintribe.model.prototyping.api.StaticPrototyping;
 import com.braintribe.model.resource.Icon;
-import com.braintribe.model.service.api.result.Failure;
+import com.braintribe.model.service.api.result.Unsatisfied;
 import com.braintribe.model.user.User;
 
 public class ApiV1RestServletExtendedTest extends AbstractApiV1RestServletTest {
@@ -96,11 +97,11 @@ public class ApiV1RestServletExtendedTest extends AbstractApiV1RestServletTest {
 		// There is no Embedded metadata on the 'user' property so it should not have been created
 		// This means that setting it via the property path notation is illegal
 
-		Failure failure = testHttpRequestSupplier.get()
+		Unsatisfied unsatisfied = testHttpRequestSupplier.get()
 				.paramViaHeaderOrUrl("user.name", "Vasily Kalinnikov")
 				.execute(400);
 		
-		assertThat(failure).isNotNull();
+		assertThat(unsatisfied.getWhy()).isInstanceOf(InvalidArgument.class);
 	}
 	
 	@Test

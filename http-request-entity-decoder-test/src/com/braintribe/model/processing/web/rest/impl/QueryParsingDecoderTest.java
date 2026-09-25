@@ -25,6 +25,8 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import com.braintribe.gm.model.reason.UnsatisfiedMaybeTunneling;
+import com.braintribe.gm.model.reason.essential.InvalidArgument;
 import com.braintribe.model.generic.GenericEntity;
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.processing.web.rest.HttpRequestEntityDecoderOptions;
@@ -42,6 +44,19 @@ import com.braintribe.testing.model.test.technical.limits.ManyValuesEnum;
 import com.braintribe.utils.CollectionTools;
 
 public class QueryParsingDecoderTest {
+
+	@Test
+	public void invalidValueProducesInvalidArgumentWithParserMessage() {
+		String invalidValue = "\"2009-05-16T04:15:25.443Z\"";
+		try {
+			decodeParams(SimpleTypesEntity.T, "dateProperty=" + invalidValue);
+			fail("Expected an unsatisfied InvalidArgument");
+		} catch (UnsatisfiedMaybeTunneling e) {
+			assertThat(e.getMaybe().isUnsatisfiedBy(InvalidArgument.T)).isTrue();
+			String message = e.getMaybe().whyUnsatisfied().getText();
+			assertThat(message).contains("dateProperty").contains(invalidValue);
+		}
+	}
 	
 	private <T extends GenericEntity> T decodeParams(EntityType<T> type, String ... params) {
 		return decode(type, String.join("&", params));

@@ -42,6 +42,8 @@ import com.braintribe.codec.marshaller.api.options.GmSerializationContextBuilder
 import com.braintribe.codec.marshaller.json.JsonStreamMarshaller;
 import com.braintribe.exception.Exceptions;
 import com.braintribe.gm.model.reason.Reason;
+import com.braintribe.gm.model.reason.essential.InvalidArgument;
+import com.braintribe.gm.model.reason.essential.NotFound;
 import com.braintribe.model.accessapi.GmqlRequest;
 import com.braintribe.model.ddra.DdraUrlMethod;
 import com.braintribe.model.processing.ddra.endpoints.RequestMethod;
@@ -63,7 +65,6 @@ import com.braintribe.model.processing.ddra.endpoints.api.v1.model.TestServiceRe
 import com.braintribe.model.processing.ddra.endpoints.api.v1.model.TestTransformerServiceRequest;
 import com.braintribe.model.processing.ddra.endpoints.api.v1.model.reason.TestReason;
 import com.braintribe.model.securityservice.OpenUserSessionWithUserAndPassword;
-import com.braintribe.model.service.api.result.Failure;
 import com.braintribe.model.service.api.result.Neutral;
 import com.braintribe.model.service.api.result.Unsatisfied;
 import com.braintribe.testing.junit.assertions.assertj.core.api.Assertions;
@@ -447,25 +448,14 @@ public class ApiV1RestServletBasicTest extends AbstractApiV1RestServletTest {
 		requests.get("tribefire-services/api/v1/does.not.Exists").contentType(JSON).accept(JSON).execute(404);
 	}
 
-	/**
-	 * 500 response as InvalidArgument
-	 */
 	@Test
 	public void urlGETWithServiceDomainAndMissingTypeSignature() {
-		// We can remove the "_type" information from the response
-		System.setProperty("TRIBEFIRE_EXCEPTION_EXPOSITION", "false");
-		Map<String, String> failureMap = requests.get("tribefire-services/api/v1/test.access").contentType(JSON).accept(JSON).execute(500);
-		assertThat(failureMap.keySet()).containsExactly("tracebackId", "message");
+		Unsatisfied unsatisfied = requests.get("tribefire-services/api/v1/test.access").contentType(JSON).accept(JSON).execute(404);
 
-		// Check that our test has no side effects - removing the ENV restores original behavior
-		System.getProperties().remove("TRIBEFIRE_EXCEPTION_EXPOSITION");
-		Failure failure = requests.get("tribefire-services/api/v1/test.access").contentType(JSON).accept(JSON).execute(500);
-		assertThat(failure).isNotNull();
+		assertThat(unsatisfied.getWhy()).isInstanceOf(NotFound.class);
+		assertThat(unsatisfied.getWhy().getText()).isEqualTo("No implicit or explicit mapping found for '/test.access'");
 	}
 
-	/**
-	 * 500 response as InvalidArgument
-	 */
 	@Test
 	public void testBaseUrlOk() {
 		requests.get("tribefire-services/api/v1").contentType(JSON).accept(JSON).execute(200);
@@ -555,9 +545,10 @@ public class ApiV1RestServletBasicTest extends AbstractApiV1RestServletTest {
 				.body("{ \"user\": \"cortex\", \"password\": \"cortex\" }");
 		//@formatter:on
 
-		Failure failure = request.execute(406);
+		Unsatisfied unsatisfied = request.execute(415);
 
-		Assert.assertEquals("Unsupported Content-Type: bar.", failure.getMessage());
+		assertThat(unsatisfied.getWhy()).isInstanceOf(InvalidArgument.class);
+		assertThat(unsatisfied.getWhy().getText()).isEqualTo("Unsupported Content-Type: bar.");
 	}
 
 	@Test

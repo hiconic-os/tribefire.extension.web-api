@@ -23,6 +23,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.braintribe.exception.HttpException;
+import com.braintribe.gm.model.reason.UnsatisfiedMaybeTunneling;
 import com.braintribe.model.processing.web.rest.model.CustomPropertiesEntity;
 import com.braintribe.model.processing.web.rest.model.InvalidPropertiesEntity;
 import com.braintribe.model.processing.web.rest.model.InvalidPropertiesParent;
@@ -311,7 +312,7 @@ public class HttpRequestEntityDecoderTest extends AbstractTest {
 		HttpRequestEntityDecoder.createFor(request, HttpRequestEntityDecoderOptions.defaults().setIgnoringUnmappedHeaders(true)).target("t", target).decode();
 	}
 
-	@Test(expected=HttpException.class)
+	@Test(expected=UnsatisfiedMaybeTunneling.class)
 	public void decodeInvalidDateInUrlParameters() {
 		decodeInvalidParameter("invalidDate", "2017-06-11T11:35:00.000+0000", false);
 	}
@@ -321,7 +322,7 @@ public class HttpRequestEntityDecoderTest extends AbstractTest {
 		decodeInvalidParameter("Date", "2017-06-11T11:35:00.000+0000", true);
 	}
 
-	@Test(expected=HttpException.class)
+	@Test(expected=UnsatisfiedMaybeTunneling.class)
 	public void decodeInvalidMapPropertyInUrlParameters() {
 		decodeInvalidParameter("mapProperty", "value", false);
 	}
@@ -331,7 +332,7 @@ public class HttpRequestEntityDecoderTest extends AbstractTest {
 		decodeInvalidParameter("gm-mapProperty", "value", true);
 	}
 
-	@Test(expected=HttpException.class)
+	@Test(expected=UnsatisfiedMaybeTunneling.class)
 	public void decodeInvalidEntityPropertyInUrlParameters() {
 		decodeInvalidParameter("entityProperty", "value", false);
 	}
@@ -346,7 +347,7 @@ public class HttpRequestEntityDecoderTest extends AbstractTest {
 		decodeInvalidParameter("gm-objectProperty", "value", true);
 	}
 
-	@Test(expected=HttpException.class)
+	@Test(expected=UnsatisfiedMaybeTunneling.class)
 	public void decodeInvalidIntPropertyInUrlParameters() {
 		decodeInvalidParameter("intProperty", "NotAnInt", false);
 	}
@@ -361,7 +362,7 @@ public class HttpRequestEntityDecoderTest extends AbstractTest {
 		decodeInvalidParameter("Content-Length", "NotAnInt", true);
 	}
 
-	@Test(expected=HttpException.class)
+	@Test(expected=UnsatisfiedMaybeTunneling.class)
 	public void decodePropertyNotFoundInUrlParameters() {
 		decodeInvalidParameter("doesNotExist", "value", false);
 		System.out.println("Succeeded-");
