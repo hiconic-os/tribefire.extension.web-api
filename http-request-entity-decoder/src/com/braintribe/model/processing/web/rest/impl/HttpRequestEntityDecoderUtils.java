@@ -37,8 +37,8 @@ public class HttpRequestEntityDecoderUtils {
 
 	// TODO move this somewhere?
 	private static final DateTimeFormatter DATETIME_FORMATTER = 
-			new DateTimeFormatterBuilder().optionalStart().appendPattern("yyyy-MM-dd['T'HH[:mm[:ss[.SSS]]]][Z]").optionalEnd()
-			.optionalStart().appendPattern("yyyyMMdd['T'HH[mm[ss[SSS]]]][Z]").optionalEnd()
+			new DateTimeFormatterBuilder().optionalStart().appendPattern("yyyy-MM-dd['T'HH[:mm[:ss[.SSS]]]][X]").optionalEnd()
+			.optionalStart().appendPattern("yyyyMMdd['T'HH[mm[ss[SSS]]]][X]").optionalEnd()
 		            .parseDefaulting(ChronoField.HOUR_OF_DAY, 0)
 		            .parseDefaulting(ChronoField.MINUTE_OF_HOUR, 0)
 		            .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
