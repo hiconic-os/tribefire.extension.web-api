@@ -27,6 +27,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -84,6 +85,7 @@ import com.braintribe.model.generic.reflection.BaseType;
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.GenericModelType;
 import com.braintribe.model.generic.reflection.Property;
+import com.braintribe.gm.model.reason.essential.ParseError;
 import com.braintribe.model.processing.meta.cmd.CmdResolver;
 import com.braintribe.model.processing.service.api.aspect.DomainIdAspect;
 import com.braintribe.model.processing.session.api.managed.ModelAccessoryFactory;
@@ -258,7 +260,10 @@ public class GmHttpClient implements HttpClient {
 			Object responsePayload = null;
 			GenericModelType responseType = null;
 			int code = httpResponse.getStatusLine().getStatusCode();
+			HttpResponseMapping responseMapping = context.responseMappingForCode(code);
 			if (code == HttpURLConnection.HTTP_NO_CONTENT) {
+				if (responseMapping != null)
+					throw new HttpException(code, "Rest request responded with failure code: " + code);
 				responseBuilder.payload(Neutral.NEUTRAL);
 			} else {
 
@@ -269,7 +274,13 @@ public class GmHttpClient implements HttpClient {
 						InputStream in = new TeeInputStream(new ResponseEntityInputStream(httpResponse), pipeOut)) {
 
 					responseType = context.responseTypeForCode(code);
-					responseMarshaller = getMarshaller(context.produces());
+					String responseMimeType = responseMapping != null ? responseMapping.bodyMimeType() : null;
+					if (responseMapping != null && StringTools.isBlank(responseMimeType)) {
+						Header contentType = httpResponse.getFirstHeader(HttpConstants.HTTP_HEADER_CONTENTTYPE);
+						responseMimeType = contentType != null ? contentType.getValue() : null;
+					}
+					if (StringTools.isBlank(responseMimeType)) responseMimeType = context.produces();
+					responseMarshaller = getMarshaller(responseMimeType);
 
 					if (responseType != null && responseMarshaller != null) {
 
@@ -333,7 +344,17 @@ public class GmHttpClient implements HttpClient {
 											.set(DateLocaleOption.class, dateFormatting != null ? dateFormatting.getDefaultLocale() : null) //
 											.set(CmdResolverOption.class, findCmdResolver()).build();
 
-							responsePayload = responseMarshaller.unmarshall(in, options);
+							try {
+								responsePayload = responseMarshaller.unmarshall(in, options);
+							} catch (Exception e) {
+								if (responseMapping != null) {
+									HttpException failure = new HttpException(code, "Rest request responded with failure code: " + code);
+									failure.withPayload(ParseError.create("Could not decode the HTTP error response as "
+											+ responseType.getTypeSignature() + ": " + e.getMessage()));
+									throw failure;
+								}
+								throw e;
+							}
 							if (responsePayload == null && responseType.isEntity()) {
 								logger.debug("Got not payload from the client. Creating an empty " + responseType);
 								responsePayload = ((EntityType<?>) responseType).create();
@@ -345,7 +366,7 @@ public class GmHttpClient implements HttpClient {
 						responseBuilder.isGeneric();
 					}
 
-					if (!context.wasSuccessful(code) && context.throwExceptionOnErrorCode(code)) {
+					if (responseMapping != null) {
 						HttpException ex = new HttpException(code, "Rest request responded with failure code: " + code);
 						ex.withPayload(responsePayload);
 						throw ex;
@@ -728,7 +749,17 @@ public class GmHttpClient implements HttpClient {
 	}
 
 	private Marshaller getMarshaller(String mimeType) {
-		return marshallerRegistry.getMarshaller(mimeType);
+		if (StringTools.isBlank(mimeType)) return null;
+		String normalizedMimeType = normalizeMimeType(mimeType);
+		Marshaller marshaller = marshallerRegistry.getMarshaller(normalizedMimeType);
+		if (marshaller == null && normalizedMimeType.endsWith("+json"))
+			marshaller = marshallerRegistry.getMarshaller("application/json");
+		return marshaller;
+	}
+
+	private static String normalizeMimeType(String mimeType) {
+		int parameterSeparator = mimeType.indexOf(';');
+		return (parameterSeparator < 0 ? mimeType : mimeType.substring(0, parameterSeparator)).trim().toLowerCase(Locale.ROOT);
 	}
 
 	@SuppressWarnings("deprecation")

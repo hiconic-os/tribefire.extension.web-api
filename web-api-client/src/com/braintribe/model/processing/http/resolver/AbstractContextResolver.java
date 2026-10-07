@@ -44,6 +44,10 @@ import com.braintribe.model.deployment.http.meta.HttpParam;
 import com.braintribe.model.deployment.http.meta.HttpParamType;
 import com.braintribe.model.deployment.http.meta.HttpPath;
 import com.braintribe.model.deployment.http.meta.HttpProduces;
+import com.braintribe.model.deployment.http.meta.HttpReasoning;
+import com.braintribe.model.deployment.http.meta.HttpStatusReasoning;
+import com.braintribe.model.deployment.http.meta.HttpBodyReasoning;
+import com.braintribe.model.deployment.http.meta.HttpBodyDetailReasoning;
 import com.braintribe.model.deployment.http.meta.HttpSuccessCodes;
 import com.braintribe.model.deployment.http.meta.params.HttpBodyParam;
 import com.braintribe.model.deployment.http.meta.params.HttpMultipartMarshalledPart;
@@ -54,6 +58,11 @@ import com.braintribe.model.deployment.http.meta.params.HttpRequestIsBody;
 import com.braintribe.model.deployment.http.meta.params.HttpResourceStreamBodyParam;
 import com.braintribe.model.generic.GMF;
 import com.braintribe.model.generic.GenericEntity;
+import com.braintribe.gm.model.reason.essential.InternalError;
+import com.braintribe.gm.model.reason.essential.InvalidArgument;
+import com.braintribe.gm.model.reason.essential.NotFound;
+import com.braintribe.gm.model.reason.essential.UnsupportedOperation;
+import com.braintribe.gm.model.http.reason.HttpError;
 import com.braintribe.model.generic.reflection.CollectionType;
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.GenericModelType;
@@ -76,6 +85,7 @@ import com.braintribe.processing.http.client.HttpConstants;
 import com.braintribe.processing.http.client.HttpParameter;
 import com.braintribe.processing.http.client.HttpRequestContext;
 import com.braintribe.processing.http.client.HttpRequestContextBuilder;
+import com.braintribe.processing.http.client.HttpResponseMapping;
 import com.braintribe.processing.http.client.HttpMultipartPart;
 import com.braintribe.processing.http.client.HttpMultipartPartKind;
 import com.braintribe.utils.DateTools;
@@ -585,14 +595,63 @@ public abstract class AbstractContextResolver implements HttpContextResolver {
 						defaultSuccessTypeMd.getResponseTypeSignature()));
 			}
 			
-			// Adding individually specified response mappings (code to type)
+			// HttpProduces only describes positive response bodies.
 			List<HttpProduces> producesMd = this.entityResolver.meta(HttpProduces.T).list();
 			producesMd.stream()
 				.forEach(m -> {
-					contextBuilder.addResponseType(m.getResponseCode(), resolveResponseType(m.getResponseType(), m.getResponseTypeSignature()));
+					GenericModelType responseType = resolveOptionalResponseType(m.getResponseType(), m.getResponseTypeSignature());
+					if (responseType != null) contextBuilder.addResponseType(m.getResponseCode(), responseType);
 					contextBuilder.addStatusCodeInfo(m.getResponseCode(), m.getUseOriginalStatusCode());
 				});
+
+			// Error interpretation is modeled independently from positive response representation.
+			List<HttpReasoning> reasoningMd = this.entityResolver.meta(HttpReasoning.T).list();
+			int metadataPrecedence = 0;
+			for (HttpReasoning reasoning : reasoningMd) {
+				GenericModelType reasonType;
+				HttpResponseMapping.Kind kind;
+				String bodyMimeType = null;
+				boolean useOriginalStatusCode = false;
+				if (reasoning instanceof HttpBodyReasoning) {
+					HttpBodyReasoning bodyReasoning = (HttpBodyReasoning) reasoning;
+					reasonType = resolveReasonType(bodyReasoning.getReasonTypeSignature());
+					bodyMimeType = StringTools.isBlank(bodyReasoning.getMimeType()) ? null : bodyReasoning.getMimeType();
+					kind = HttpResponseMapping.Kind.BODY;
+					useOriginalStatusCode = bodyReasoning.getUseOriginalStatusCode();
+				} else if (reasoning instanceof HttpBodyDetailReasoning) {
+					HttpBodyDetailReasoning detailReasoning = (HttpBodyDetailReasoning) reasoning;
+					reasonType = resolveReasonType(detailReasoning.getReasonTypeSignature());
+					bodyMimeType = StringTools.isBlank(detailReasoning.getMimeType()) ? null : detailReasoning.getMimeType();
+					kind = HttpResponseMapping.Kind.BODY_DETAIL;
+				} else if (reasoning instanceof HttpStatusReasoning) {
+					reasonType = resolveReasonType(((HttpStatusReasoning) reasoning).getReasonTypeSignature());
+					kind = HttpResponseMapping.Kind.STATUS;
+					useOriginalStatusCode = ((HttpStatusReasoning) reasoning).getUseOriginalStatusCode();
+				} else {
+					throw new IllegalArgumentException("Unsupported HTTP reasoning metadata: " + reasoning.entityType().getTypeSignature());
+				}
+				contextBuilder.addResponseMapping(new HttpResponseMapping(reasoning.getStatusCodeExpression(), kind, reasonType, bodyMimeType,
+						useOriginalStatusCode, false, metadataPrecedence++));
+			}
+
+			addDefaultErrorMapping(contextBuilder, "400", InvalidArgument.T);
+			addDefaultErrorMapping(contextBuilder, "404", NotFound.T);
+			addDefaultErrorMapping(contextBuilder, "405", UnsupportedOperation.T);
+			addDefaultErrorMapping(contextBuilder, "422", InvalidArgument.T);
+			addDefaultErrorMapping(contextBuilder, "500", InternalError.T);
+			addDefaultErrorMapping(contextBuilder, "!2xx", HttpError.T);
 			
+		}
+
+		private void addDefaultErrorMapping(HttpRequestContextBuilder contextBuilder, String selector, GenericModelType reasonType) {
+			contextBuilder.addResponseMapping(new HttpResponseMapping(selector, HttpResponseMapping.Kind.STATUS, reasonType, false, true));
+		}
+
+		private GenericModelType resolveReasonType(String typeSignature) {
+			GenericModelType type = resolveResponseType(null, typeSignature);
+			if (!(type instanceof EntityType) || !com.braintribe.gm.model.reason.Reason.T.isAssignableFrom((EntityType<?>) type))
+				throw new IllegalArgumentException("HTTP reasoning type must be a Reason: " + type.getTypeSignature());
+			return type;
 		}
 
 		
@@ -661,6 +720,12 @@ public abstract class AbstractContextResolver implements HttpContextResolver {
 			GenericModelType responseType = typeReflection.getType(typeSignature);
 			indexPotentialResponseType(responseType);
 			return responseType;
+		}
+
+		private GenericModelType resolveOptionalResponseType(GmType gmType, String configuredTypeSignature) {
+			if (gmType == null && StringTools.isBlank(configuredTypeSignature))
+				return null;
+			return resolveResponseType(gmType, configuredTypeSignature);
 		}
 		
 		private <T> void resolve(Supplier<T> supplier, Consumer<T> consumer) {

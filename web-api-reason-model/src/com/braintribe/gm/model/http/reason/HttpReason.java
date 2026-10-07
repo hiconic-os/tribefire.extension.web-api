@@ -1,10 +1,11 @@
 package com.braintribe.gm.model.http.reason;
 
-import com.braintribe.gm.model.reason.essential.CommunicationError;
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.EntityTypes;
 
-public interface HttpReason extends CommunicationError {
+/** @deprecated Use {@link HttpError} with a nested {@link HttpStatusReason}. */
+@Deprecated
+public interface HttpReason extends HttpError {
 	EntityType<HttpReason> T = EntityTypes.T(HttpReason.class);
 
 	Integer getHttpCode();
@@ -16,7 +17,7 @@ public interface HttpReason extends CommunicationError {
 	@Override
 	default String asString() {
 		StringBuilder sb = new StringBuilder();
-		sb.append(CommunicationError.super.asString());
+		sb.append(HttpError.super.asString());
 		sb.append(" HTTP code: ").append(getHttpCode());
 		sb.append(" HTTP payload: ").append(getHttpPayload());
 		return sb.toString();

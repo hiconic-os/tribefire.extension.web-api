@@ -4,6 +4,9 @@ com.braintribe.model.deployment.http.annotation.HttpDefaultFailureResponseType,c
 com.braintribe.model.deployment.http.annotation.HttpDefaultSuccessResponseType,com.braintribe.model.deployment.http.meta.HttpDefaultSuccessResponseType,value,responseTypeSignature
 com.braintribe.model.deployment.http.annotation.HttpPath,com.braintribe.model.deployment.http.meta.HttpPath,value,path
 com.braintribe.model.deployment.http.annotation.HttpProduces,com.braintribe.model.deployment.http.meta.HttpProduces,mimeType,mimeType,responseCode,responseCode,responseType,responseTypeSignature,useOriginalStatusCode,useOriginalStatusCode
+com.braintribe.model.deployment.http.annotation.HttpStatusReasoning,com.braintribe.model.deployment.http.meta.HttpStatusReasoning,status,statusCodeExpression,reasonType,reasonTypeSignature,useOriginalStatusCode,useOriginalStatusCode
+com.braintribe.model.deployment.http.annotation.HttpBodyReasoning,com.braintribe.model.deployment.http.meta.HttpBodyReasoning,status,statusCodeExpression,reasonType,reasonTypeSignature,mimeType,mimeType,useOriginalStatusCode,useOriginalStatusCode
+com.braintribe.model.deployment.http.annotation.HttpBodyDetailReasoning,com.braintribe.model.deployment.http.meta.HttpBodyDetailReasoning,status,statusCodeExpression,reasonType,reasonTypeSignature,mimeType,mimeType
 com.braintribe.model.deployment.http.annotation.HttpSuccessCodes,com.braintribe.model.deployment.http.meta.HttpSuccessCodes,value,successCodes
 com.braintribe.model.deployment.http.annotation.HttpMultipartFormData,com.braintribe.model.deployment.http.meta.HttpMultipartFormData,value,requestPartName,requestPartMimeType,requestPartMimeType
 com.braintribe.model.deployment.http.annotation.HttpConnect,com.braintribe.model.deployment.http.meta.methods.HttpConnect
