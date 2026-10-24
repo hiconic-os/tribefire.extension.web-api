@@ -15,6 +15,7 @@ public @interface HttpProduces {
 	int responseCode() default 200;
 	@NullDefault
 	Class<? extends GenericEntity> responseType() default GenericEntity.class;
+	boolean lenient() default false;
 	boolean useOriginalStatusCode() default false;
 
 	@Retention(RetentionPolicy.RUNTIME)

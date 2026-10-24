@@ -20,6 +20,7 @@ public @interface HttpBodyDetailReasoning {
 	/** Legacy name retained for compatibility; this is the entity type expected in the response body. */
 	Class<? extends GenericEntity> reasonType();
 	String mimeType() default "";
+	boolean lenient() default false;
 
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.TYPE)

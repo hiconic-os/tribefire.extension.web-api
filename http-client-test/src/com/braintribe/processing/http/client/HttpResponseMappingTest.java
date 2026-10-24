@@ -85,6 +85,26 @@ public class HttpResponseMappingTest {
 		assertSame(InvalidArgument.T, selected.reasonType());
 	}
 
+	@Test
+	public void implicitResponsesStayLenientWhileExplicitMappingsControlLenience() {
+		HttpRequestContext implicit = HttpRequestContextBuilder.instance(null)
+				.addResponseType(200, NotFound.T)
+				.build();
+		assertTrue(implicit.lenientResponseDecodingForCode(200));
+
+		HttpRequestContext explicitStrict = HttpRequestContextBuilder.instance(null)
+				.addResponseType(200, NotFound.T)
+				.addResponseDecodingLenience(200, false)
+				.build();
+		assertFalse(explicitStrict.lenientResponseDecodingForCode(200));
+
+		HttpRequestContext reasoningLenient = HttpRequestContextBuilder.instance(null)
+				.addResponseMapping(new HttpResponseMapping("400", HttpResponseMapping.Kind.BODY, NotFound.T,
+						"application/json", true, false, false, 0))
+				.build();
+		assertTrue(reasoningLenient.lenientResponseDecodingForCode(400));
+	}
+
 	private static HttpResponseMapping mapping(String expression, HttpResponseMapping.Kind kind,
 			com.braintribe.model.generic.reflection.GenericModelType reasonType, boolean defaultRule) {
 		return new HttpResponseMapping(expression, kind, reasonType, false, defaultRule);

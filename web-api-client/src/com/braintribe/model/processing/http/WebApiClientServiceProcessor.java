@@ -28,6 +28,7 @@ import com.braintribe.gm.model.http.reason.HttpStatusWithTextBody;
 import com.braintribe.gm.model.reason.Maybe;
 import com.braintribe.gm.model.reason.Reason;
 import com.braintribe.gm.model.reason.UnsatisfiedMaybeTunneling;
+import com.braintribe.gm.model.reason.essential.CommunicationError;
 import com.braintribe.gm.model.reason.essential.ParseError;
 import com.braintribe.logging.Logger;
 import com.braintribe.model.generic.GenericEntity;
@@ -42,6 +43,7 @@ import com.braintribe.processing.http.client.HttpClient;
 import com.braintribe.processing.http.client.HttpErrorResponse;
 import com.braintribe.processing.http.client.HttpRequestContext;
 import com.braintribe.processing.http.client.HttpResponse;
+import com.braintribe.processing.http.client.HttpResponseDecodingException;
 import com.braintribe.processing.http.client.HttpResponseMapping;
 import com.braintribe.utils.lcd.StopWatch;
 
@@ -80,6 +82,9 @@ public class WebApiClientServiceProcessor implements ServiceProcessor<ServiceReq
 
 			return response.combinedResponse();
 
+		} catch (HttpResponseDecodingException e) {
+			Reason reason = mapDecodingFailure(e.getStatusCode(), e.getResponse());
+			throw new UnsatisfiedMaybeTunneling(Maybe.empty(reason));
 		} catch (HttpException e) {
 			logger.debug(() -> "HTTP execution for ServiceRequest: " + (request != null ? request.entityType().getTypeSignature() : "null")
 					+ " failed with status code: " + e.getStatusCode() + " and payload " + e.getPayload() + " after: " + watch.getElapsedTime()
@@ -119,6 +124,24 @@ public class WebApiClientServiceProcessor implements ServiceProcessor<ServiceReq
 		main.setText(text);
 		main.causedBy(statusReason);
 		return main;
+	}
+
+	static Reason mapDecodingFailure(int statusCode, HttpErrorResponse response) {
+		HttpStatusReason status = textStatusReason(statusCode, response);
+		ParseError parseError = ParseError.create(response.decodingFailure());
+		parseError.causedBy(status);
+
+		CommunicationError reason = CommunicationError.create("Could not decode the remote HTTP response according to its modeled contract");
+		reason.causedBy(parseError);
+		return reason;
+	}
+
+	private static HttpStatusReason textStatusReason(int statusCode, HttpErrorResponse response) {
+		HttpStatusWithTextBody reason = HttpStatusWithTextBody.T.create();
+		initializeStatus(reason, statusCode, response);
+		reason.setBody(response.textBody());
+		reason.setExpectedBodyTypeSignature(response.expectedBodyTypeSignature());
+		return reason;
 	}
 
 	private static HttpStatusReason statusReason(int statusCode, HttpErrorResponse response, Object decodedBody) {

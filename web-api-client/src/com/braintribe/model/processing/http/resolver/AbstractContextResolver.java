@@ -601,6 +601,7 @@ public abstract class AbstractContextResolver implements HttpContextResolver {
 				.forEach(m -> {
 					GenericModelType responseType = resolveOptionalResponseType(m.getResponseType(), m.getResponseTypeSignature());
 					if (responseType != null) contextBuilder.addResponseType(m.getResponseCode(), responseType);
+					contextBuilder.addResponseDecodingLenience(m.getResponseCode(), m.getLenient());
 					contextBuilder.addStatusCodeInfo(m.getResponseCode(), m.getUseOriginalStatusCode());
 				});
 
@@ -611,17 +612,20 @@ public abstract class AbstractContextResolver implements HttpContextResolver {
 				GenericModelType reasonType;
 				HttpResponseMapping.Kind kind;
 				String bodyMimeType = null;
+				boolean lenient = false;
 				boolean useOriginalStatusCode = false;
 				if (reasoning instanceof HttpBodyReasoning) {
 					HttpBodyReasoning bodyReasoning = (HttpBodyReasoning) reasoning;
 					reasonType = resolveReasonType(bodyReasoning.getReasonTypeSignature());
 					bodyMimeType = StringTools.isBlank(bodyReasoning.getMimeType()) ? null : bodyReasoning.getMimeType();
+					lenient = bodyReasoning.getLenient();
 					kind = HttpResponseMapping.Kind.BODY;
 					useOriginalStatusCode = bodyReasoning.getUseOriginalStatusCode();
 				} else if (reasoning instanceof HttpBodyDetailReasoning) {
 					HttpBodyDetailReasoning detailReasoning = (HttpBodyDetailReasoning) reasoning;
 					reasonType = resolveBodyDetailType(detailReasoning.getReasonTypeSignature());
 					bodyMimeType = StringTools.isBlank(detailReasoning.getMimeType()) ? null : detailReasoning.getMimeType();
+					lenient = detailReasoning.getLenient();
 					kind = HttpResponseMapping.Kind.BODY_DETAIL;
 				} else if (reasoning instanceof HttpStatusReasoning) {
 					reasonType = resolveReasonType(((HttpStatusReasoning) reasoning).getReasonTypeSignature());
@@ -630,7 +634,7 @@ public abstract class AbstractContextResolver implements HttpContextResolver {
 				} else {
 					throw new IllegalArgumentException("Unsupported HTTP reasoning metadata: " + reasoning.entityType().getTypeSignature());
 				}
-				contextBuilder.addResponseMapping(new HttpResponseMapping(reasoning.getStatusCodeExpression(), kind, reasonType, bodyMimeType,
+				contextBuilder.addResponseMapping(new HttpResponseMapping(reasoning.getStatusCodeExpression(), kind, reasonType, bodyMimeType, lenient,
 						useOriginalStatusCode, false, metadataPrecedence++));
 			}
 

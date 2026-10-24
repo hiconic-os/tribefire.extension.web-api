@@ -19,6 +19,7 @@ public @interface HttpBodyReasoning {
 	String status();
 	Class<? extends Reason> reasonType();
 	String mimeType() default "";
+	boolean lenient() default false;
 	boolean useOriginalStatusCode() default false;
 
 	@Retention(RetentionPolicy.RUNTIME)

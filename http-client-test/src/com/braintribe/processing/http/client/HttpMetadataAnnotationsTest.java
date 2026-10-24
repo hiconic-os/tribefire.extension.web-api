@@ -24,7 +24,7 @@ public class HttpMetadataAnnotationsTest {
 	private static class MultipartAnnotated {}
 
 	@com.braintribe.model.deployment.http.annotation.HttpProduces(globalId = "produces", mimeType = "application/xml",
-			responseCode = 202, useOriginalStatusCode = true)
+			responseCode = 202, lenient = true, useOriginalStatusCode = true)
 	private static class ProducesAnnotated {}
 
 	@com.braintribe.model.deployment.http.annotation.HttpStatusReasoning(globalId = "status-reasoning", status = "4xx,!404",
@@ -32,7 +32,7 @@ public class HttpMetadataAnnotationsTest {
 	private static class StatusReasoningAnnotated {}
 
 	@com.braintribe.model.deployment.http.annotation.HttpBodyDetailReasoning(globalId = "body-detail", status = "4xx,5xx",
-			reasonType = InvalidArgument.class, mimeType = "application/problem+json")
+			reasonType = InvalidArgument.class, mimeType = "application/problem+json", lenient = true)
 	private static class BodyDetailReasoningAnnotated {}
 
 	@com.braintribe.model.deployment.http.annotation.HttpSuccessCodes(globalId = "success-codes", value = { 200, 201, 204 })
@@ -66,6 +66,7 @@ public class HttpMetadataAnnotationsTest {
 				ProducesAnnotated.class.getAnnotation(com.braintribe.model.deployment.http.annotation.HttpProduces.class));
 		assertEquals("application/xml", metadata.getMimeType());
 		assertEquals(202, metadata.getResponseCode());
+		assertEquals(true, metadata.getLenient());
 		assertEquals(true, metadata.getUseOriginalStatusCode());
 	}
 
@@ -85,6 +86,7 @@ public class HttpMetadataAnnotationsTest {
 		assertEquals("4xx,5xx", metadata.getStatusCodeExpression());
 		assertEquals(InvalidArgument.class.getName(), metadata.getReasonTypeSignature());
 		assertEquals("application/problem+json", metadata.getMimeType());
+		assertEquals(true, metadata.getLenient());
 	}
 
 	@Test
