@@ -11,7 +11,7 @@ import com.braintribe.model.meta.data.EntityTypeMetaData;
  * <p>
  * Matching rules are ordered by metadata proximity, selector specificity, semantic subtype specificity and finally declaration order. Root and
  * detail rules occupy independent slots: exactly one {@link HttpRootReasoning} creates the result reason, while an optional
- * {@link HttpBodyDetailReasoning} may decode the response body as a cause. The body is consumed exactly once.
+ * {@link HttpBodyDetailReasoning} may decode the response body as evidence carried by the HTTP status reason. The body is consumed exactly once.
  */
 @Abstract
 @Description("Interprets matching HTTP responses as unsatisfied service results.")

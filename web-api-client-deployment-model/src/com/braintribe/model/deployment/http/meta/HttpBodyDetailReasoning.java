@@ -5,14 +5,14 @@ import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.EntityTypes;
 
 /**
- * Decodes a structured error body as a reason and inserts it as a cause beneath the selected root reason. This rule is resolved independently of root
- * reasoning and therefore enriches status mappings without repeating them. It is ignored when {@link HttpBodyReasoning} owns the body.
+ * Decodes a structured error body as evidence carried by the selected HTTP status reason. This rule is resolved independently of root reasoning and
+ * therefore enriches status mappings without repeating them. It is ignored when {@link HttpBodyReasoning} owns the body.
  */
-@Description("Decodes a structured HTTP error body as a detail cause.")
+@Description("Decodes a structured HTTP error body as evidence on the HTTP status reason.")
 public interface HttpBodyDetailReasoning extends HttpBodyBasedReasoning {
 	EntityType<HttpBodyDetailReasoning> T = EntityTypes.T(HttpBodyDetailReasoning.class);
 
-	@Description("Type signature of the detail Reason decoded from the HTTP response body.")
+	@Description("Entity type expected in the HTTP response body. The legacy property name is retained for compatibility.")
 	String getReasonTypeSignature();
 	void setReasonTypeSignature(String reasonTypeSignature);
 }
